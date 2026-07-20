@@ -10,10 +10,43 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // necesiten deben vivir en una Edge Function de Supabase.
 const ADMIN_EMAILS = ['admin@wyncare.es', 'gabriiel.calvo88@gmail.com', 'alex@wyncare.com'];
 
-/* ---------- SUPABASE CLIENT ---------- */
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-  auth: { autoRefreshToken: true, persistSession: true, storageKey: 'wyncare-auth', flowType: 'pkce' }
-});
+/* ---------- SUPABASE CLIENT (con red de seguridad) ---------- */
+// Si el CDN de Supabase no llega a cargar (red lenta, ad-blocker, firewall
+// corporativo, jsdelivr caído...), esta línea lanzaba una excepción que
+// paraba TODO el script justo aquí, al principio — incluido el código que
+// más abajo hace visibles las secciones de la landing (.reveal) y activa
+// el menú móvil, el conmutador de tema, etc. Resultado: página casi en
+// blanco. Con el cliente de repuesto, cada llamada falla con un error
+// normal (que el código ya captura con try/catch) en vez de reventar.
+function offlineSupabaseClient() {
+  var err = { message: 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.' };
+  var chain = {
+    then: function(resolve) { return Promise.resolve(resolve({ data: null, error: err })); },
+    catch: function() { return chain; },
+    single: function() { return Promise.resolve({ data: null, error: err }); },
+    eq: function() { return chain; },
+    select: function() { return chain; },
+    limit: function() { return chain; },
+    upsert: function() { return Promise.resolve({ data: null, error: err }); },
+    update: function() { return chain; },
+    insert: function() { return Promise.resolve({ data: null, error: err }); }
+  };
+  return {
+    auth: {
+      signInWithPassword: function() { return Promise.resolve({ data: null, error: err }); },
+      signUp: function() { return Promise.resolve({ data: null, error: err }); },
+      signOut: function() { return Promise.resolve({ error: null }); },
+      getSession: function() { return Promise.resolve({ data: { session: null } }); },
+      resetPasswordForEmail: function() { return Promise.resolve({ error: err }); }
+    },
+    from: function() { return chain; }
+  };
+}
+const supabase = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: { autoRefreshToken: true, persistSession: true, storageKey: 'wyncare-auth', flowType: 'pkce' }
+    })
+  : offlineSupabaseClient();
 
 /* ---------- STATE ---------- */
 let currentUser = null;
