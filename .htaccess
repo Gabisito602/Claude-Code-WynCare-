@@ -1,5 +1,15 @@
 # Cache control for WynCare + SPA routing
 
+# Security headers (site-wide)
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), payment=()"
+  # HSTS: 180 días, sin includeSubDomains por si algún subdominio aún no tiene TLS
+  Header always set Strict-Transport-Security "max-age=15552000"
+</IfModule>
+
 # SPA routing for WynCare - serve index.html for all unknown paths
 <IfModule mod_rewrite.c>
   RewriteEngine On

@@ -5,7 +5,9 @@
 /* ---------- CONFIG ---------- */
 const SUPABASE_URL = 'https://leiyhsgajiuxxdznivvl.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlaXloc2dhaml1eHhkem5pdnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjkzMTIsImV4cCI6MjA5OTU0NTMxMn0.2E_yyH3PPIfQQxK1O8v8seDh-lcVQ4Bna35SXAq2GXg';
-const SUPABASE_SERVICE_ROLE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlaXloc2dhaml1eHhkem5pdnZsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mzk2OTMxMiwiZXhwIjoyMDk5NTQ1MzEyfQ.9zf2nZwDx5GDvI4U0vdoFEOQ3AMncvUO6TKCvD0ExD8';
+// La clave service_role NUNCA debe estar en código de cliente: cualquier visitante
+// puede leerla y saltarse las políticas RLS. Las operaciones de admin que la
+// necesiten deben vivir en una Edge Function de Supabase.
 const ADMIN_EMAILS = ['admin@wyncare.es', 'gabriiel.calvo88@gmail.com', 'alex@wyncare.com'];
 
 /* ---------- SUPABASE CLIENT ---------- */
@@ -25,6 +27,14 @@ const qs = (sel, ctx) => (ctx || document).querySelector(sel);
 const qsa = (sel, ctx) => (ctx || document).querySelectorAll(sel);
 
 function formatCurrency(n) { return n.toFixed(2).replace('.', ','); }
+
+// Escapa texto antes de interpolarlo en innerHTML — obligatorio para cualquier
+// dato que venga de Supabase o del usuario (nombres, referencias, mensajes...).
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
 
 function formatEsNumber(n, decimals) {
   var fixed = n.toFixed(decimals || 0);
@@ -208,7 +218,7 @@ function updateDashboard() {
       listEl.innerHTML = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todavía no tienes seguros activos. Cotiza el primero desde "Presupuestos".</p></div>';
     } else {
       listEl.innerHTML = active.slice(0, 4).map(p =>
-        '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + (p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + (p.reference || '—') + '</div></div><span class="st active">Activo</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span></div>'
+        '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st active">Activo</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span></div>'
       ).join('');
     }
   }
@@ -231,7 +241,7 @@ function updatePoliciesTab() {
   } else {
     container.innerHTML = currentPolicies.map(p => {
       const a = (p.status === 'active' || p.status === 'Activo');
-      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + (p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + (p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span><a class="doc-link" href="#">Documentos</a></div>';
+      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span><a class="doc-link" href="#">Documentos</a></div>';
     }).join('');
   }
 }
@@ -258,7 +268,7 @@ function updateWynpointsTab() {
     const pm = { 'coche': 700, 'hogar': 600, 'salud': 1500, 'vida': 2500, 'empresa': 3500, 'telemedicina': 0 };
     earnList.innerHTML = currentPolicies.map(p => {
       const pts2 = pm[(p.type || p.policy_type || '').toLowerCase()] || 500;
-      return '<div><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg><span class="nm">' + (p.type || p.policy_type || 'Seguro') + '</span><span class="pt">+' + pts2 + ' pts</span></div>';
+      return '<div><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg><span class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</span><span class="pt">+' + pts2 + ' pts</span></div>';
     }).join('');
   }
 }
@@ -396,7 +406,7 @@ function addTeddyMessage(text, isUser) {
   var body = $('teddyBody'); if (!body) return;
   var div = document.createElement('div');
   div.className = 't-msg' + (isUser ? ' user' : '');
-  div.innerHTML = '<span class="av">' + (isUser ? '<svg><use href="#i-user"/></svg>' : '<svg class="icon" style="stroke:var(--gold-ink);width:12px;height:12px"><use href="#i-chat"/></svg>') + '</span><div class="bubble">' + text + '</div>';
+  div.innerHTML = '<span class="av">' + (isUser ? '<svg><use href="#i-user"/></svg>' : '<svg class="icon" style="stroke:var(--gold-ink);width:12px;height:12px"><use href="#i-chat"/></svg>') + '</span><div class="bubble">' + esc(text) + '</div>';
   body.appendChild(div);
   body.scrollTop = body.scrollHeight;
 }
@@ -573,7 +583,7 @@ async function loadAdminPanel() {
   }
 
   var panel = document.createElement('div'); panel.className = 'admin-overlay'; panel.id = 'adminPanel';
-  panel.innerHTML = '<div class="admin-panel"><button class="close-btn" id="adminClose"><svg class="icon" style="width:15px;height:15px"><use href="#i-close"/></svg></button><h2>Panel de Administraci\u00f3n <span class="badge-admin">Admin</span></h2><p class="sub">' + (currentUser ? currentUser.email : '') + ' \u00b7 wyncare.es</p><div class="admin-tabs"><button class="admin-tab" data-admin-tab="usuarios" aria-current="true">Usuarios</button><button class="admin-tab" data-admin-tab="cotizaciones">Cotizaciones</button><button class="admin-tab" data-admin-tab="polizas">P\u00f3lizas</button><button class="admin-tab" data-admin-tab="wynpoints">WynPoints</button></div><div id="adminContent"><p style="color:var(--text-2)">Cargando datos...</p></div></div>';
+  panel.innerHTML = '<div class="admin-panel"><button class="close-btn" id="adminClose"><svg class="icon" style="width:15px;height:15px"><use href="#i-close"/></svg></button><h2>Panel de Administraci\u00f3n <span class="badge-admin">Admin</span></h2><p class="sub">' + esc(currentUser ? currentUser.email : '') + ' \u00b7 wyncare.es</p><div class="admin-tabs"><button class="admin-tab" data-admin-tab="usuarios" aria-current="true">Usuarios</button><button class="admin-tab" data-admin-tab="cotizaciones">Cotizaciones</button><button class="admin-tab" data-admin-tab="polizas">P\u00f3lizas</button><button class="admin-tab" data-admin-tab="wynpoints">WynPoints</button></div><div id="adminContent"><p style="color:var(--text-2)">Cargando datos...</p></div></div>';
   document.body.appendChild(panel);
 
   $('adminClose').addEventListener('click', function() { panel.remove(); document.documentElement.classList.remove('admin-mode'); navigate('#/app'); });
@@ -593,14 +603,11 @@ async function loadAdminPanel() {
 
 async function adminFetch(table) {
   try {
+    // Lee con la sesión del usuario; el acceso de admin lo deciden las
+    // políticas RLS de Supabase, nunca una clave embebida en el cliente.
     var { data, error } = await supabase.from(table).select('*').limit(200);
-    if (error) {
-      var res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?limit=200', {
-        headers: { 'apikey': SUPABASE_SERVICE_ROLE, 'Authorization': 'Bearer ' + SUPABASE_SERVICE_ROLE }
-      });
-      return await res.json();
-    }
-    return data;
+    if (error) { console.warn('adminFetch(' + table + '): ' + error.message); return []; }
+    return data || [];
   } catch(e) { return []; }
 }
 
@@ -614,7 +621,7 @@ async function loadAdminTab(tabName) {
       html += '<table class="admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>WynPoints</th><th>Registro</th></tr></thead><tbody>';
       for (var i = 0; i < profiles.length; i++) {
         var p = profiles[i];
-        html += '<tr><td style="font-family:var(--font-mono);font-size:.75rem">' + ((p.id || '').substring(0, 8) || '\u2014') + '</td><td>' + (p.full_name || '\u2014') + '</td><td>' + (p.email || '\u2014') + '</td><td>' + (p.wynpoints || 0) + '</td><td>' + (p.created_at ? new Date(p.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
+        html += '<tr><td style="font-family:var(--font-mono);font-size:.75rem">' + esc((p.id || '').substring(0, 8) || '\u2014') + '</td><td>' + esc(p.full_name || '\u2014') + '</td><td>' + esc(p.email || '\u2014') + '</td><td>' + esc(p.wynpoints || 0) + '</td><td>' + (p.created_at ? new Date(p.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
       }
       html += '</tbody></table>';
       content.innerHTML = html;
@@ -624,7 +631,7 @@ async function loadAdminTab(tabName) {
       html += '<table class="admin-table"><thead><tr><th>Ref</th><th>Tipo</th><th>Prima</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>';
       for (var i = 0; i < quotes.length; i++) {
         var q = quotes[i];
-        html += '<tr><td>' + (q.reference || '\u2014') + '</td><td>' + (q.quote_type || '\u2014') + '</td><td>' + (q.premium || 0) + '\u20ac</td><td>' + (q.status || '\u2014') + '</td><td>' + (q.created_at ? new Date(q.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
+        html += '<tr><td>' + esc(q.reference || '\u2014') + '</td><td>' + esc(q.quote_type || '\u2014') + '</td><td>' + esc(q.premium || 0) + '\u20ac</td><td>' + esc(q.status || '\u2014') + '</td><td>' + (q.created_at ? new Date(q.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
       }
       html += '</tbody></table>';
       content.innerHTML = html;
@@ -634,7 +641,7 @@ async function loadAdminTab(tabName) {
       html += '<table class="admin-table"><thead><tr><th>Ref</th><th>Tipo</th><th>Prima</th><th>Estado</th><th>Usuario</th></tr></thead><tbody>';
       for (var i = 0; i < policies.length; i++) {
         var p = policies[i];
-        html += '<tr><td>' + (p.reference || '\u2014') + '</td><td>' + (p.type || p.policy_type || '\u2014') + '</td><td>' + (p.premium || 0) + '\u20ac</td><td>' + (p.status || '\u2014') + '</td><td style="font-size:.75rem">' + ((p.user_id || '').substring(0, 8) || '\u2014') + '</td></tr>';
+        html += '<tr><td>' + esc(p.reference || '\u2014') + '</td><td>' + esc(p.type || p.policy_type || '\u2014') + '</td><td>' + esc(p.premium || 0) + '\u20ac</td><td>' + esc(p.status || '\u2014') + '</td><td style="font-size:.75rem">' + esc((p.user_id || '').substring(0, 8) || '\u2014') + '</td></tr>';
       }
       html += '</tbody></table>';
       content.innerHTML = html;
@@ -644,13 +651,13 @@ async function loadAdminTab(tabName) {
       html += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Tipo</th><th>Puntos</th><th>Concepto</th><th>Fecha</th></tr></thead><tbody>';
       for (var i = 0; i < trans.length; i++) {
         var t = trans[i];
-        html += '<tr><td>' + ((t.user_id || '').substring(0, 8) || '\u2014') + '</td><td>' + (t.transaction_type || t.type || '\u2014') + '</td><td>' + (t.points || 0) + '</td><td>' + (t.description || '\u2014') + '</td><td>' + (t.created_at ? new Date(t.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
+        html += '<tr><td>' + esc((t.user_id || '').substring(0, 8) || '\u2014') + '</td><td>' + esc(t.transaction_type || t.type || '\u2014') + '</td><td>' + esc(t.points || 0) + '</td><td>' + esc(t.description || '\u2014') + '</td><td>' + (t.created_at ? new Date(t.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
       }
       html += '</tbody></table>';
       content.innerHTML = html;
     }
   } catch (err) {
-    content.innerHTML = '<p style="color:var(--danger)">Error al cargar datos: ' + err.message + '</p>';
+    content.innerHTML = '<p style="color:var(--danger)">Error al cargar datos: ' + esc(err.message) + '</p>';
   }
 }
 

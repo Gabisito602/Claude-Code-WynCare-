@@ -6,6 +6,26 @@
 <title>WynCare — La plataforma de tu protección</title>
 <meta name="description" content="WynCare compara, contrata y gestiona tus seguros con IA. Sin ser aseguradora. WynPoints, telemedicina y un asistente que nunca duerme.">
 <meta name="theme-color" content="#0A0F1C">
+<link rel="canonical" href="https://wyncare.es/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="WynCare">
+<meta property="og:title" content="WynCare — La plataforma de tu protección">
+<meta property="og:description" content="Compara, contrata y gestiona tus seguros con IA. WynPoints, telemedicina y un asistente que nunca duerme.">
+<meta property="og:url" content="https://wyncare.es/">
+<meta property="og:image" content="https://wyncare.es/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="WynCare — La plataforma de tu protección">
+<meta name="twitter:description" content="Compara, contrata y gestiona tus seguros con IA. Sin ser aseguradora.">
+<meta name="twitter:image" content="https://wyncare.es/og.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"WynCare","url":"https://wyncare.es/","logo":"https://wyncare.es/apple-touch-icon.png","email":"contacto@wyncare.es","description":"Plataforma para comparar, contratar y gestionar seguros con inteligencia artificial."}
+</script>
+<script>/* aplica el tema guardado antes del primer render para evitar el flash */
+try{var _t=localStorage.getItem('wyncare-theme');if(_t)document.documentElement.setAttribute('data-theme',_t)}catch(e){}</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230A0F1C'/%3E%3Cpath d='M12 4l6 2.4v5.2c0 4.3-2.9 6.9-6 7.8-3.1-.9-6-3.5-6-7.8V6.4L12 4z' fill='none' stroke='%23D8B573' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -157,9 +177,11 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
 .spotlight:hover::before{opacity:1}
 .spotlight>*{position:relative;z-index:1}
 
-/* infinite logo marquee */
+/* infinite logo marquee — two identical halves (second aria-hidden), each with
+   trailing padding equal to the gap so translateX(-50%) tiles seamlessly */
 .marquee{overflow:hidden;-webkit-mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent)}
-.marquee-track{display:flex;width:max-content;gap:clamp(2.2rem,6vw,4rem);animation:marquee-scroll 28s linear infinite}
+.marquee-track{display:flex;width:max-content;animation:marquee-scroll 28s linear infinite}
+.marquee .logo-row{flex:none;padding-right:clamp(1.6rem,5vw,3.2rem)}
 .marquee:hover .marquee-track{animation-play-state:paused}
 @keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
@@ -422,6 +444,19 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
 @media (max-width:900px){.tm-grid{grid-template-columns:1fr}}
 
 /* ==================================================================
+   10c. FAQ
+   ================================================================== */
+.faq-list{max-width:760px;margin-inline:auto;display:flex;flex-direction:column;gap:.75rem}
+.faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);transition:border-color .2s ease}
+.faq-item[open]{border-color:rgba(var(--gold-rgb),.45)}
+.faq-item summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:.8rem;padding:1.05rem 1.25rem;font-weight:600;font-size:.97rem}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary .chev{margin-left:auto;flex:none;width:26px;height:26px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;transition:transform .3s var(--ease-out-expo),border-color .2s ease,color .2s ease}
+.faq-item summary .chev svg{width:13px;height:13px}
+.faq-item[open] summary .chev{transform:rotate(45deg);border-color:var(--gold);color:var(--gold)}
+.faq-item .faq-body{padding:0 1.25rem 1.15rem;color:var(--text-2);font-size:.92rem;line-height:1.65;max-width:64ch}
+
+/* ==================================================================
    11. CTA + FOOTER
    ================================================================== */
 .cta-block{background:radial-gradient(120% 140% at 0% 0%,#141D33 0%,#070B15 60%);border-radius:var(--radius-lg);margin-inline:clamp(1.25rem,4vw,2.5rem);padding:clamp(3rem,7vw,5rem) clamp(1.5rem,5vw,3.5rem);text-align:center;color:#F4F2EC;overflow:hidden}
@@ -661,7 +696,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 .teddy-send svg{width:16px;height:16px}
 @media (max-width:480px){.teddy-panel{right:.6rem;left:.6rem;bottom:.6rem;width:auto;height:min(80vh,600px)}.teddy-launcher{right:1.1rem;bottom:1.1rem}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 </head>
 <body>
 
@@ -706,6 +741,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 12h5l2 3h4l2-3h5"/><path d="M5 12 3 5h18l-2 7"/><path d="M3 12v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6"/></symbol>
 <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><polyline points="14 3 14 7 18 7"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
 </defs>
 </svg>
 
@@ -768,7 +804,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <div class="hero-stats">
             <div><span class="num"><span data-count-to="2400" data-prefix="+">0</span></span><span class="lbl">Familias protegidas</span></div>
             <div><span class="num"><span data-count-to="4.8" data-decimals="1" data-suffix=" ★">0</span></span><span class="lbl">Valoración media</span></div>
-            <div><span class="num"><span data-count-to="93" data-suffix="%">0</span></span><span class="lbl">Ahorro en prima</span></div>
+            <div><span class="num"><span data-count-to="93" data-suffix="%">0</span></span><span class="lbl">Clientes que ahorran</span></div>
           </div>
         </div>
 
@@ -799,9 +835,9 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
       <div class="container">
         <div class="title">Comparamos las mejores aseguradoras</div>
         <div class="marquee">
-          <div class="logo-row marquee-track">
-            <span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span>
-            <span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span>
+          <div class="marquee-track">
+            <div class="logo-row"><span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span></div>
+            <div class="logo-row" aria-hidden="true"><span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span></div>
           </div>
         </div>
       </div>
@@ -1011,6 +1047,43 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
       </div>
     </section>
 
+    <!-- FAQ -->
+    <section id="faq" class="section-pad" style="scroll-margin-top:90px">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Preguntas frecuentes</span>
+          <h2>Resolvemos tus dudas</h2>
+          <p>Y si te queda alguna, Teddy está abajo a la derecha — o escríbenos a contacto@wyncare.es.</p>
+        </div>
+        <div class="faq-list reveal">
+          <details class="faq-item">
+            <summary>¿WynCare es una aseguradora?<span class="chev"><svg class="icon"><use href="#i-plus"/></svg></span></summary>
+            <div class="faq-body">No. Somos una plataforma tecnológica que compara, contrata y gestiona seguros por ti. La cobertura la presta siempre la aseguradora que elijas (AXA, Mapfre, Sanitas, Allianz o Generali); nosotros ponemos la inteligencia, la transparencia y el soporte.</div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Cuánto cuesta usar WynCare?<span class="chev"><svg class="icon"><use href="#i-plus"/></svg></span></summary>
+            <div class="faq-body">Nada. Comparar y gestionar tus seguros es gratis, y el precio de tu póliza es el mismo que si fueras directamente a la aseguradora. Nos financiamos con la comisión que ellas pagan por la mediación.</div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Qué son los WynPoints y cómo los gano?<span class="chev"><svg class="icon"><use href="#i-plus"/></svg></span></summary>
+            <div class="faq-body">Es nuestro programa de fidelización: cada póliza activa suma puntos automáticamente (por ejemplo, Coche +700, Salud +1.500) y sigue sumando mientras esté vigente. Los canjeas por tarjetas regalo, gasolina, gimnasios, cine y más.</div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Qué incluye la telemedicina?<span class="chev"><svg class="icon"><use href="#i-plus"/></svg></span></summary>
+            <div class="faq-body">Con WynCare+ tienes videoconsultas de medicina general, pediatría y psicología, recetas digitales y seguimiento — sin esperar cita y sin salir de casa, desde la propia plataforma.</div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Puedo gestionar seguros que ya tengo contratados?<span class="chev"><svg class="icon"><use href="#i-plus"/></svg></span></summary>
+            <div class="faq-body">Sí. Puedes centralizar tus pólizas actuales en tu Dashboard para tener documentos, renovaciones y gastos en un solo lugar, aunque no las hayas contratado con nosotros.</div>
+          </details>
+          <details class="faq-item">
+            <summary>¿Qué pasa con mis datos?<span class="chev"><svg class="icon"><use href="#i-plus"/></svg></span></summary>
+            <div class="faq-body">Tus datos se almacenan cifrados y se tratan conforme al RGPD. Solo los usamos para darte el servicio: nunca los vendemos y no te llamará nadie que no hayas pedido.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <!-- CTA -->
     <section class="section-pad" style="padding-bottom:0">
       <div class="container">
@@ -1055,10 +1128,10 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         <p class="sub">Accede a tu Área Cliente para gestionar tus seguros.</p>
         <form id="loginForm">
           <div class="field"><label for="loginEmail">Correo electrónico</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-mail"/></svg><input id="loginEmail" type="email" placeholder="tú@email.com" autocomplete="email"></div>
+            <div class="input-wrap"><svg class="icon"><use href="#i-mail"/></svg><input id="loginEmail" required type="email" placeholder="tú@email.com" autocomplete="email"></div>
           </div>
           <div class="field"><label for="loginPass">Contraseña</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-lock"/></svg><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+            <div class="input-wrap"><svg class="icon"><use href="#i-lock"/></svg><input id="loginPass" required type="password" placeholder="••••••••" autocomplete="current-password"></div>
           </div>
           <a class="forgot-link" href="#/recuperar">¿Olvidaste tu contraseña?</a>
           <button class="btn btn-primary btn-block" type="submit" style="margin-top:1.3rem">Entrar</button>
@@ -1087,13 +1160,13 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         <p class="sub">Empieza a gestionar tus seguros desde un único lugar.</p>
         <form id="registerForm">
           <div class="field"><label for="regName">Nombre</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-user"/></svg><input id="regName" type="text" placeholder="Tu nombre" autocomplete="given-name"></div>
+            <div class="input-wrap"><svg class="icon"><use href="#i-user"/></svg><input id="regName" required type="text" placeholder="Tu nombre" autocomplete="given-name"></div>
           </div>
           <div class="field"><label for="regEmail">Correo electrónico</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-mail"/></svg><input id="regEmail" type="email" placeholder="tú@email.com" autocomplete="email"></div>
+            <div class="input-wrap"><svg class="icon"><use href="#i-mail"/></svg><input id="regEmail" required type="email" placeholder="tú@email.com" autocomplete="email"></div>
           </div>
           <div class="field"><label for="regPass">Contraseña</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-lock"/></svg><input id="regPass" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"></div>
+            <div class="input-wrap"><svg class="icon"><use href="#i-lock"/></svg><input id="regPass" required minlength="8" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password"></div>
           </div>
           <button class="btn btn-primary btn-block" type="submit" style="margin-top:1.3rem">Crear cuenta</button>
         </form>
@@ -1118,7 +1191,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         <p class="sub">Te enviaremos un enlace para restablecerla.</p>
         <form id="forgotForm">
           <div class="field"><label for="forgotEmail">Correo electrónico</label>
-            <div class="input-wrap"><svg class="icon"><use href="#i-mail"/></svg><input id="forgotEmail" type="email" placeholder="tú@email.com" autocomplete="email"></div>
+            <div class="input-wrap"><svg class="icon"><use href="#i-mail"/></svg><input id="forgotEmail" required type="email" placeholder="tú@email.com" autocomplete="email"></div>
           </div>
           <button class="btn btn-primary btn-block" type="submit" style="margin-top:1.3rem">Enviar enlace</button>
         </form>
@@ -1338,6 +1411,6 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
   </div>
 </div>
 
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2" defer></script>
 </body>
 </html>

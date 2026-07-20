@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /wyncare-admin.html
+
+Sitemap: https://wyncare.es/sitemap.xml

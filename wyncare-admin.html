@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>WynCare — Panel de Administración</title>
+<meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#0A0F1C">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230A0F1C'/%3E%3Cpath d='M12 4l6 2.4v5.2c0 4.3-2.9 6.9-6 7.8-3.1-.9-6-3.5-6-7.8V6.4L12 4z' fill='none' stroke='%23D8B573' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -675,6 +676,14 @@ table.data tbody tr:hover{background:var(--surface-2)}
 (function(){
 "use strict";
 
+/* Escapa texto antes de meterlo en innerHTML. Con los datos mock da igual,
+   pero cuando las tablas se alimenten de Supabase será obligatorio. */
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
 /* ---------- TEMA ---------- */
 var root = document.documentElement;
 function setTheme(mode){ root.setAttribute('data-theme', mode); }
@@ -789,14 +798,14 @@ var TONE_MAP = {
   'Pausado':'neutral',
   'Admin':'gold','Oro':'gold','Platino':'gold'
 };
-function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class="badge tone-'+tone+'">'+v+'</span>'; }
+function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class="badge tone-'+tone+'">'+esc(v)+'</span>'; }
 
 /* ---------- GENERIC TABLE RENDERER ---------- */
 function mountTable(containerId, cfg){
   var el = document.getElementById(containerId);
   if (!el) return;
   var uid = containerId;
-  var statsHtml = (cfg.stats || []).map(function(s){ return '<div class="tc-stat"><div class="v">'+s[0]+'</div><div class="l">'+s[1]+'</div></div>'; }).join('');
+  var statsHtml = (cfg.stats || []).map(function(s){ return '<div class="tc-stat"><div class="v">'+esc(s[0])+'</div><div class="l">'+esc(s[1])+'</div></div>'; }).join('');
   var html = '<div class="table-card">';
   if (statsHtml) html += '<div class="tc-stats">'+statsHtml+'</div>';
   html += '<div class="tc-head"><h3>'+cfg.title+'</h3>';
@@ -819,7 +828,7 @@ function mountTable(containerId, cfg){
     tbody.innerHTML = rows.map(function(r){
       var tds = cfg.columns.map(function(c){
         var val = r[c.key];
-        var content = c.badge ? badgeHtml(val) : (c.mono ? '<span class="mono">'+val+'</span>' : val);
+        var content = c.badge ? badgeHtml(val) : (c.mono ? '<span class="mono">'+esc(val)+'</span>' : esc(val));
         return '<td'+(c.align==='right'?' class="al-right"':'')+'>'+content+'</td>';
       }).join('');
       tds += '<td class="al-right"><span class="row-actions"><button class="btn-icon" data-row-edit><svg class="icon"><use href="#i-pencil"/></svg></button><button class="btn-icon" data-row-del><svg class="icon"><use href="#i-trash"/></svg></button></span></td>';
@@ -1088,7 +1097,7 @@ renderHBars('hbarNiveles', [{l:'Bronce',v:46},{l:'Plata',v:31},{l:'Oro',v:16},{l
 
 /* ---------- ACTIVITY FEED ---------- */
 document.getElementById('activityFeed').innerHTML = D.logs.rows.slice(0,4).map(function(r){
-  return '<div class="activity-item"><span class="activity-dot"></span><div><div>'+r.actor+' — '+r.accion+' <span class="mono" style="color:var(--text-3)">'+r.detalle+'</span></div><div class="t">'+r.ts+'</div></div></div>';
+  return '<div class="activity-item"><span class="activity-dot"></span><div><div>'+esc(r.actor)+' — '+esc(r.accion)+' <span class="mono" style="color:var(--text-3)">'+esc(r.detalle)+'</span></div><div class="t">'+esc(r.ts)+'</div></div></div>';
 }).join('');
 
 /* ---------- GLOBAL SEARCH ---------- */
@@ -1112,7 +1121,7 @@ gsInput.addEventListener('input', function(){
     return item.primary.toLowerCase().indexOf(q) > -1 || item.secondary.toLowerCase().indexOf(q) > -1;
   }).slice(0,6);
   gsResults.innerHTML = matches.length ? matches.map(function(m){
-    return '<button data-tab="'+m.tab+'" data-sub="'+m.sub+'"><span class="r-main">'+m.primary+'</span><span class="r-meta">'+m.section+(m.secondary?(' · '+m.secondary):'')+'</span></button>';
+    return '<button data-tab="'+m.tab+'" data-sub="'+m.sub+'"><span class="r-main">'+esc(m.primary)+'</span><span class="r-meta">'+esc(m.section)+(m.secondary?(' · '+esc(m.secondary)):'')+'</span></button>';
   }).join('') : '<div class="gsearch-empty">Sin resultados</div>';
   gsResults.classList.add('is-open');
 });
@@ -1152,6 +1161,14 @@ if (sbToggle && sbOverlay && sidebar){
 // Also close sidebar on Escape key
 document.addEventListener("keydown", function(e){
   if(e.key === "Escape" && sidebar && sidebar.classList.contains("is-open")) closeSidebar();
+});
+
+/* ---------- KEYBOARD: "/" enfoca la búsqueda global ---------- */
+document.addEventListener('keydown', function(e){
+  if (e.key !== '/' || e.target.closest('input,textarea,select')) return;
+  if (!document.getElementById('app').classList.contains('is-active')) return;
+  e.preventDefault();
+  gsInput.focus();
 });
 
 /* ---------- CURSOR SPOTLIGHT (kpi/panel/integ/settings cards) ---------- */

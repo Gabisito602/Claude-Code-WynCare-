@@ -4,9 +4,13 @@ WynCare AI
 Código fuente de wyncare.es (SPA estática servida vía Apache/.htaccess):
 
 - `index.html` — landing page + app principal (SPA con routing por hash).
-- `app.js` — lógica de la app: auth, pólizas, WynPoints, panel de admin, integración con Supabase.
-- `wyncare-admin.html` — vista/panel de administración.
-- `.htaccess` — reglas de reescritura (SPA routing) y cache-control.
+- `app.js` — lógica de la app: auth, pólizas, WynPoints, panel de admin, integración con Supabase. Cargado con `?v=N` para cache busting: **al modificarlo, sube la versión en el `<script>` de index.html**.
+- `wyncare-admin.html` — panel de administración standalone (accesible como `/admin`, con `noindex`). Datos mock en el objeto `D` al final del script.
+- `.htaccess` — SPA routing, cache-control y cabeceras de seguridad.
+- `og.png` / `apple-touch-icon.png` — imagen para compartir en redes/WhatsApp e icono iOS.
+- `robots.txt` / `sitemap.xml` — SEO; `/admin` excluido del rastreo.
 
-> ⚠️ **Pendiente de seguridad**: `app.js` contiene la clave `SUPABASE_SERVICE_ROLE` embebida en cliente, usada como fallback en `adminFetch()`. Esa clave salta las reglas RLS de Supabase y debe rotarse en el panel de Supabase y moverse a una función servidora (no en JS de cliente) antes de seguir desplegando.
+Notas de seguridad:
+- La clave `service_role` de Supabase **nunca** debe estar en el código de cliente (se eliminó y la clave expuesta fue rotada). Las operaciones que la necesiten van en una Edge Function.
+- Todo dato de Supabase/usuario que se pinte con `innerHTML` debe pasar por el helper `esc()` (ya aplicado en `app.js` y en el renderer de tablas del admin).
 
