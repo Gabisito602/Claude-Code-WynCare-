@@ -10,91 +10,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=1">
 <style>
-:root{
-  --canvas:#0A0F1C;--surface:#0F1626;--surface-2:#141D33;--surface-3:#1A2440;
-  --glass-bg:rgba(255,255,255,.05);--glass-border:rgba(255,255,255,.12);
-  --border:rgba(255,255,255,.09);--border-strong:rgba(255,255,255,.18);
-  --text-1:#F4F2EC;--text-2:rgba(244,242,236,.66);--text-3:rgba(244,242,236,.4);
-  --gold:#D8B573;--gold-strong:#E8C98F;--gold-ink:#20160A;--gold-rgb:216,181,115;
-  --success:#3ED598;--success-bg:rgba(62,213,152,.13);--danger:#F2765C;--danger-bg:rgba(242,118,92,.13);
-  --warning:#E8B84B;--warning-bg:rgba(232,184,75,.14);
-  --radius-sm:10px;--radius-md:16px;--radius-lg:22px;--radius-full:999px;
-  --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
-  --shadow-1:0 20px 50px -26px rgba(0,0,0,.65);--shadow-2:0 34px 90px -34px rgba(0,0,0,.75);
-  --ease-out-expo:cubic-bezier(.16,1,.3,1);
-  --violet:#8C7CF0;--violet-rgb:140,124,240;--teal:#4FD6C4;--teal-rgb:79,214,196;
-}
-html[data-theme="light"]{
-  --canvas:#F6F4EE;--surface:#FFFFFF;--surface-2:#FBF9F3;--surface-3:#F1EDE1;
-  --glass-bg:rgba(16,22,38,.035);--glass-border:rgba(16,22,38,.09);
-  --border:rgba(16,22,38,.09);--border-strong:rgba(16,22,38,.18);
-  --text-1:#12172A;--text-2:rgba(18,23,42,.64);--text-3:rgba(18,23,42,.4);
-  --gold:#A9813C;--gold-strong:#8C6B2E;--gold-ink:#FFFFFF;--gold-rgb:169,129,60;
-  --success:#1F9463;--success-bg:#E4F5EC;--danger:#C7472F;--danger-bg:#FBE7E2;
-  --warning:#9A7415;--warning-bg:#F6ECD2;
-  --shadow-1:0 16px 40px -24px rgba(16,22,38,.16);--shadow-2:0 24px 64px -28px rgba(16,22,38,.2);
-}
-*,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--canvas);color:var(--text-1);font-family:var(--font-ui);line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .3s ease,color .3s ease}
-img,svg{display:block;max-width:100%}
-a{color:inherit;text-decoration:none}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-ul{list-style:none;margin:0;padding:0}
-h1,h2,h3,h4,p{margin:0}
-input,select,textarea{font:inherit;color:inherit;background:none;border:0}
-table{border-collapse:collapse;width:100%}
-:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
-.icon{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.mono{font-family:var(--font-mono)}
-h1{font-size:1.7rem;font-weight:700;letter-spacing:-.02em}
-h2{font-size:1.3rem;font-weight:700;letter-spacing:-.01em}
+/* Base específica del panel de administración
+   (tokens y componentes compartidos viven en styles.css) */
+:root{--icon-size:18px;--tt-size:34px}
+body{line-height:1.5}
+h1{font-size:1.7rem}
+h2{font-size:1.3rem}
 h3{font-size:1.02rem;font-weight:650}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;padding:.6rem 1.05rem;border-radius:var(--radius-full);font-weight:600;font-size:.82rem;white-space:nowrap;transition:transform .15s ease,box-shadow .15s ease,background .15s ease,opacity .15s ease}
+/* botones compactos, densidad de panel */
+.btn{padding:.6rem 1.05rem;font-size:.82rem;gap:.45rem}
 .btn svg{width:15px;height:15px}
-.btn-primary{background:var(--gold);color:var(--gold-ink)}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px -14px rgba(var(--gold-rgb),.55)}
-.btn-quiet{background:var(--glass-bg);border:1px solid var(--border);color:var(--text-1)}
-.btn-quiet:hover{background:var(--surface-3)}
-.btn-icon{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2)}
-.btn-icon:hover{background:var(--surface-3);color:var(--text-1)}
-.btn:disabled{opacity:.4;cursor:default;transform:none!important}
 
-.badge{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:.7rem;font-weight:600;padding:.28rem .6rem;border-radius:var(--radius-full);white-space:nowrap}
-.tone-success{color:var(--success);background:var(--success-bg)}
-.tone-warning{color:var(--warning);background:var(--warning-bg)}
-.tone-danger{color:var(--danger);background:var(--danger-bg)}
-.tone-neutral{color:var(--text-2);background:var(--surface-3)}
-.tone-gold{color:var(--gold);background:rgba(var(--gold-rgb),.14)}
-
-.switch{--w:42px;--h:24px;width:var(--w);height:var(--h);border-radius:var(--radius-full);background:var(--surface-3);border:1px solid var(--border-strong);position:relative;flex:none;transition:background .2s ease}
-.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-1);transition:transform .2s ease}
-.switch[aria-checked="true"]{background:var(--gold)}
-.switch[aria-checked="true"]::after{transform:translateX(18px);background:var(--gold-ink)}
-
-.theme-toggle{width:34px;height:34px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex:none;position:relative;overflow:hidden}
-.theme-toggle:hover{background:var(--glass-bg)}
-.theme-toggle svg{position:absolute;transition:transform .3s ease,opacity .3s ease}
-.theme-toggle .i-sun{opacity:0;transform:rotate(45deg) scale(.5)}
-.theme-toggle .i-moon{opacity:1;transform:none}
-html[data-theme="light"] .theme-toggle .i-sun{opacity:1;transform:none}
-html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg) scale(.5)}
-
-/* ===== SHARED MOTION / PREMIUM UTILITIES ===== */
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
-
-.grain{position:relative}
-.grain::after{
-  content:"";position:absolute;inset:0;pointer-events:none;opacity:.3;mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-}
-.aurora{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none}
-@keyframes aurora-float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-4%) scale(1.08)}66%{transform:translate(-3%,3%) scale(.95)}}
-@media (prefers-reduced-motion:reduce){.aurora{animation:none!important}}
-
-/* cursor-follow glow on data cards — driven by --mx/--my set in JS, no extra classes needed in markup */
+/* spotlight sobre las tarjetas de datos — mismo patrón que .spotlight,
+   aplicado a las clases del panel (el JS fija --mx/--my sobre ellas) */
 .kpi-card,.panel,.integ-card,.settings-card{position:relative;isolation:isolate}
 .kpi-card::before,.panel::before,.integ-card::before,.settings-card::before{
   content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:0;
@@ -102,19 +33,6 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
 }
 .kpi-card:hover::before,.panel:hover::before,.integ-card:hover::before,.settings-card:hover::before{opacity:1}
 .kpi-card>*,.panel>*,.integ-card>*,.settings-card>*{position:relative;z-index:1}
-
-/* entrance animation replayed on every tab switch (see switchTab in script) */
-@keyframes tab-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.tab-anim{animation:tab-in .5s var(--ease-out-expo) both}
-
-/* sheen sweep on primary buttons */
-.btn-primary{position:relative;overflow:hidden}
-.btn-primary::after{
-  content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
-  background:linear-gradient(115deg,transparent,rgba(255,255,255,.5),transparent);
-  transform:skewX(-18deg);transition:left .6s var(--ease-out-expo);pointer-events:none;
-}
-.btn-primary:hover::after{left:130%}
 
 /* ===== LOGIN GATE ===== */
 .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;overflow:hidden;
