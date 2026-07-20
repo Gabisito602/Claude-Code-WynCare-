@@ -26,6 +26,8 @@
   --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --pad-section:clamp(3.5rem,7vw,6.5rem); --w-container:1180px;
+  --ease-out-expo:cubic-bezier(.16,1,.3,1);
+  --violet:#8C7CF0; --violet-rgb:140,124,240; --teal:#4FD6C4; --teal-rgb:79,214,196;
 }
 html[data-theme="light"]{
   --canvas:#F6F4EE; --surface:#FFFFFF; --surface-2:#FBF9F3; --surface-3:#F1EDE1;
@@ -121,8 +123,66 @@ em.accent{font-style:normal;color:var(--gold)}
 html[data-theme="light"] .theme-toggle .i-sun{opacity:1;transform:none}
 html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg) scale(.5)}
 
-.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .7s var(--ease-out-expo),transform .7s var(--ease-out-expo)}
 .reveal.is-visible{opacity:1;transform:none}
+.reveal-stagger.is-visible{transition-delay:calc(var(--stagger,0) * 70ms)}
+
+/* gradient text (headline accent) */
+.grad-text{
+  background:linear-gradient(100deg,var(--gold-strong) 0%,var(--gold) 35%,var(--violet) 75%,var(--teal) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;font-style:normal;
+}
+
+/* film-grain overlay for premium texture on dark canvases */
+.grain::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* floating aurora blobs */
+.aurora{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;will-change:transform,opacity}
+@keyframes aurora-float{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(3%,-4%) scale(1.08)}
+  66%{transform:translate(-3%,3%) scale(.95)}
+}
+@media (prefers-reduced-motion:reduce){.aurora{animation:none!important}}
+
+/* spotlight hover glow — JS sets --mx/--my on mousemove */
+.spotlight{position:relative;isolation:isolate}
+.spotlight::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:0;
+  background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%),rgba(var(--gold-rgb),.16),transparent 65%);
+}
+.spotlight:hover::before{opacity:1}
+.spotlight>*{position:relative;z-index:1}
+
+/* infinite logo marquee */
+.marquee{overflow:hidden;-webkit-mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(to right,transparent,#000 8%,#000 92%,transparent)}
+.marquee-track{display:flex;width:max-content;gap:clamp(2.2rem,6vw,4rem);animation:marquee-scroll 28s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* magnetic sheen sweep on primary buttons */
+.btn-primary{position:relative;overflow:hidden}
+.btn-primary::after{
+  content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(115deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-18deg);transition:left .6s var(--ease-out-expo);pointer-events:none;
+}
+.btn-primary:hover::after{left:130%}
+
+/* animated conic-gradient border for CTA */
+.glow-border{position:relative;z-index:0}
+.glow-border::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;z-index:-1;padding:1px;opacity:.8;
+  background:conic-gradient(from var(--angle,0deg),var(--gold),var(--violet),var(--teal),var(--gold));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;animation:glow-spin 6s linear infinite;
+}
+@keyframes glow-spin{to{--angle:360deg}}
+@property --angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+@media (prefers-reduced-motion:reduce){.glow-border::before{animation:none}}
 
 /* ==================================================================
    2. VIEW ROUTER
@@ -136,6 +196,7 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
    ================================================================== */
 .nav{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(--canvas) 78%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .25s ease}
 .nav.is-scrolled{border-color:var(--border)}
+.scroll-progress{position:absolute;left:0;bottom:-1px;height:2px;width:0%;background:linear-gradient(90deg,var(--gold),var(--violet),var(--teal));transition:width .1s linear;z-index:2}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;padding-block:.85rem}
 .brand{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.15rem;letter-spacing:-.01em}
 .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none}
@@ -165,6 +226,8 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
   content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.055) 1px,transparent 1px);
   background-size:26px 26px;mask-image:linear-gradient(to bottom,black,transparent 78%);pointer-events:none;
 }
+.hero .aurora-1{width:46vw;height:46vw;max-width:640px;max-height:640px;top:-18%;right:-8%;background:radial-gradient(circle,rgba(var(--violet-rgb),.32),transparent 70%);animation:aurora-float 22s ease-in-out infinite}
+.hero .aurora-2{width:32vw;height:32vw;max-width:460px;max-height:460px;bottom:-14%;left:-6%;background:radial-gradient(circle,rgba(var(--teal-rgb),.22),transparent 70%);animation:aurora-float 26s ease-in-out infinite reverse}
 .hero-inner{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(2.5rem,5vw,4rem);align-items:center}
 .hero h1{margin-top:1.1rem;color:#F4F2EC}
 .hero .lede{margin-top:1.15rem;color:rgba(244,242,236,.68);font-size:clamp(1rem,1.5vw,1.12rem);max-width:32rem}
@@ -216,9 +279,9 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
    ================================================================== */
 .partners{padding-block:clamp(2.2rem,5vw,3.2rem);border-bottom:1px solid var(--border)}
 .partners .title{text-align:center;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:1.5rem}
-.logo-row{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(1.6rem,5vw,3.2rem)}
-.logo-row span{font-weight:700;font-size:1.05rem;color:var(--text-3);transition:color .2s ease}
-.logo-row span:hover{color:var(--text-1)}
+.logo-row{display:flex;align-items:center;flex-wrap:nowrap;gap:clamp(1.6rem,5vw,3.2rem)}
+.logo-row span{font-weight:700;font-size:1.05rem;color:var(--text-3);transition:color .2s ease;white-space:nowrap;filter:grayscale(1);opacity:.75}
+.logo-row span:hover{color:var(--text-1);filter:none;opacity:1}
 
 /* ==================================================================
    6. ABOUT / MOCKUP
@@ -344,9 +407,24 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
 @media (max-width:900px){.rewards-grid{grid-template-columns:repeat(2,1fr)}}
 
 /* ==================================================================
+   10b. TESTIMONIALS
+   ================================================================== */
+.testimonials{background:var(--surface-2)}
+.tm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+.tm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;display:flex;flex-direction:column;gap:1rem;transition:transform .2s ease,box-shadow .2s ease}
+.tm-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-1)}
+.tm-stars{display:flex;gap:.2rem;color:var(--gold)}
+.tm-stars svg{width:14px;height:14px;fill:var(--gold);stroke:none}
+.tm-quote{font-size:.92rem;color:var(--text-1);line-height:1.55}
+.tm-who{display:flex;align-items:center;gap:.65rem;margin-top:auto}
+.tm-who .n{font-size:.86rem;font-weight:600}
+.tm-who .r{font-size:.74rem;color:var(--text-3)}
+@media (max-width:900px){.tm-grid{grid-template-columns:1fr}}
+
+/* ==================================================================
    11. CTA + FOOTER
    ================================================================== */
-.cta-block{background:radial-gradient(120% 140% at 0% 0%,#141D33 0%,#070B15 60%);border-radius:var(--radius-lg);margin-inline:clamp(1.25rem,4vw,2.5rem);padding:clamp(3rem,7vw,5rem) clamp(1.5rem,5vw,3.5rem);text-align:center;color:#F4F2EC}
+.cta-block{background:radial-gradient(120% 140% at 0% 0%,#141D33 0%,#070B15 60%);border-radius:var(--radius-lg);margin-inline:clamp(1.25rem,4vw,2.5rem);padding:clamp(3rem,7vw,5rem) clamp(1.5rem,5vw,3.5rem);text-align:center;color:#F4F2EC;overflow:hidden}
 .cta-block p{color:rgba(244,242,236,.68);margin-top:1rem;font-size:1.02rem;max-width:32rem;margin-inline:auto}
 .cta-actions{display:flex;justify-content:center;gap:.85rem;margin-top:1.9rem;flex-wrap:wrap}
 .cta-actions .btn-ghost{border-color:rgba(255,255,255,.22);color:#fff}
@@ -627,6 +705,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 21 20 3 20z"/><line x1="12" y1="9" x2="12" y2="13.5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 12h5l2 3h4l2-3h5"/><path d="M5 12 3 5h18l-2 7"/><path d="M3 12v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6"/></symbol>
 <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><polyline points="14 3 14 7 18 7"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/></symbol>
 </defs>
 </svg>
 
@@ -634,6 +713,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <div class="view is-active" id="view-home">
 
   <header class="nav" id="siteNav">
+    <span class="scroll-progress" id="scrollProgress"></span>
     <div class="container nav-inner">
       <a class="brand" href="#/">
         <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>
@@ -671,22 +751,24 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 
   <main>
     <!-- HERO -->
-    <section class="hero">
+    <section class="hero grain">
+      <span class="aurora aurora-1" aria-hidden="true"></span>
+      <span class="aurora aurora-2" aria-hidden="true"></span>
       <div class="container hero-inner">
         <div>
           <span class="eyebrow" style="color:#E8C98F;background:rgba(var(--gold-rgb),.16);border-color:rgba(var(--gold-rgb),.4)">
             <svg class="icon" style="width:13px;height:13px"><use href="#i-shield"/></svg>Protección real para personas reales
           </span>
-          <h1>Tu protección, con la claridad de un <em class="accent">producto tecnológico</em></h1>
+          <h1>Tu protección, con la claridad de un <em class="accent grad-text">producto tecnológico</em></h1>
           <p class="lede">No somos una aseguradora. Somos la plataforma inteligente para comparar, contratar y gestionar tus seguros — con IA, sin letra pequeña y sin llamadas que no pediste.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#/registro">Comparar gratis <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
             <a class="btn btn-ghost" href="#how">Cómo funciona</a>
           </div>
           <div class="hero-stats">
-            <div><span class="num">+2.400</span><span class="lbl">Familias protegidas</span></div>
-            <div><span class="num">4.8 ★</span><span class="lbl">Valoración media</span></div>
-            <div><span class="num">93%</span><span class="lbl">Ahorro en prima</span></div>
+            <div><span class="num"><span data-count-to="2400" data-prefix="+">0</span></span><span class="lbl">Familias protegidas</span></div>
+            <div><span class="num"><span data-count-to="4.8" data-decimals="1" data-suffix=" ★">0</span></span><span class="lbl">Valoración media</span></div>
+            <div><span class="num"><span data-count-to="93" data-suffix="%">0</span></span><span class="lbl">Ahorro en prima</span></div>
           </div>
         </div>
 
@@ -716,7 +798,12 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
     <section class="partners">
       <div class="container">
         <div class="title">Comparamos las mejores aseguradoras</div>
-        <div class="logo-row"><span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span></div>
+        <div class="marquee">
+          <div class="logo-row marquee-track">
+            <span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span>
+            <span>AXA</span><span>Mapfre</span><span>Sanitas</span><span>Allianz</span><span>Generali</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -765,7 +852,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         </div>
 
         <div class="bento-top">
-          <div class="feat-card feat-large reveal">
+          <div class="feat-card feat-large spotlight reveal">
             <div>
               <div class="feat-icon"><svg class="icon"><use href="#i-search"/></svg></div>
               <h3>Comparador inteligente</h3>
@@ -775,7 +862,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
               <span>Mapfre · 41€</span><span>Allianz · 38€</span><span class="best">AXA · 35€ · mejor opción</span>
             </div>
           </div>
-          <div class="feat-card reveal">
+          <div class="feat-card spotlight reveal">
             <div class="feat-icon"><svg class="icon"><use href="#i-chat"/></svg></div>
             <h3>Teddy, tu asistente</h3>
             <p>Resuelve dudas, compara coberturas y te conecta con un humano cuando hace falta.</p>
@@ -787,10 +874,10 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         </div>
 
         <div class="bento-grid">
-          <div class="feat-card reveal"><div class="feat-icon"><svg class="icon"><use href="#i-bolt"/></svg></div><h3>Cotización en 2 min</h3><p>Contesta solo lo necesario y obtén una estimación al instante.</p></div>
-          <div class="feat-card reveal"><div class="feat-icon"><svg class="icon"><use href="#i-award"/></svg></div><h3>WynPoints</h3><p>Acumula puntos por cada seguro activo y cámbialos por recompensas.</p></div>
-          <div class="feat-card reveal"><div class="feat-icon"><svg class="icon"><use href="#i-pulse"/></svg></div><h3>Telemedicina</h3><p>Videoconsultas, recetas y gestión de salud desde la plataforma.</p></div>
-          <div class="feat-card reveal"><div class="feat-icon"><svg class="icon"><use href="#i-grid"/></svg></div><h3>Dashboard central</h3><p>Pólizas, documentos y renovaciones en un solo panel.</p></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-bolt"/></svg></div><h3>Cotización en 2 min</h3><p>Contesta solo lo necesario y obtén una estimación al instante.</p></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-award"/></svg></div><h3>WynPoints</h3><p>Acumula puntos por cada seguro activo y cámbialos por recompensas.</p></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-pulse"/></svg></div><h3>Telemedicina</h3><p>Videoconsultas, recetas y gestión de salud desde la plataforma.</p></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-grid"/></svg></div><h3>Dashboard central</h3><p>Pólizas, documentos y renovaciones en un solo panel.</p></div>
         </div>
       </div>
     </section>
@@ -885,14 +972,41 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <p>Canjea tus WynPoints por tarjetas regalo, descuentos y experiencias.</p>
         </div>
         <div class="rewards-grid">
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-gift"/></svg></span><h4>Tarjetas regalo</h4><p>Amazon, El Corte Inglés</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-fuel"/></svg></span><h4>Gasolineras</h4><p>Repsol, Cepsa, BP</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-fork"/></svg></span><h4>Restaurantes</h4><p>Descuentos exclusivos</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-dumbbell"/></svg></span><h4>Gimnasios</h4><p>Mensualidades gratis</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-scissors"/></svg></span><h4>Barberías</h4><p>Servicios descuento</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-tooth"/></svg></span><h4>Dentistas</h4><p>Revisiones gratuitas</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-glasses"/></svg></span><h4>Ópticas</h4><p>Descuentos graduados</p></div>
-          <div class="reward-card reveal"><span class="ic"><svg class="icon"><use href="#i-film"/></svg></span><h4>Cines</h4><p>Entradas 2x1</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-gift"/></svg></span><h4>Tarjetas regalo</h4><p>Amazon, El Corte Inglés</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-fuel"/></svg></span><h4>Gasolineras</h4><p>Repsol, Cepsa, BP</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-fork"/></svg></span><h4>Restaurantes</h4><p>Descuentos exclusivos</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-dumbbell"/></svg></span><h4>Gimnasios</h4><p>Mensualidades gratis</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-scissors"/></svg></span><h4>Barberías</h4><p>Servicios descuento</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-tooth"/></svg></span><h4>Dentistas</h4><p>Revisiones gratuitas</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-glasses"/></svg></span><h4>Ópticas</h4><p>Descuentos graduados</p></div>
+          <div class="reward-card spotlight reveal"><span class="ic"><svg class="icon"><use href="#i-film"/></svg></span><h4>Cines</h4><p>Entradas 2x1</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="testimonials section-pad">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Opiniones</span>
+          <h2>Familias que ya simplificaron su protección</h2>
+        </div>
+        <div class="tm-grid">
+          <div class="tm-card reveal">
+            <div class="tm-stars"><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg></div>
+            <p class="tm-quote">"Contraté coche y hogar en 10 minutos, sin una sola llamada. Y ya llevo 700 WynPoints."</p>
+            <div class="tm-who"><div class="avatar" style="width:34px;height:34px;font-size:.8rem">A</div><div><div class="n">Ana García</div><div class="r">Cliente desde 2024</div></div></div>
+          </div>
+          <div class="tm-card reveal">
+            <div class="tm-stars"><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg></div>
+            <p class="tm-quote">"Todos mis seguros, mis puntos y mis consultas médicas en una sola app. Así debería ser esto."</p>
+            <div class="tm-who"><div class="avatar" style="width:34px;height:34px;font-size:.8rem">M</div><div><div class="n">Marc Ruiz</div><div class="r">Cliente desde 2025</div></div></div>
+          </div>
+          <div class="tm-card reveal">
+            <div class="tm-stars"><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg></div>
+            <p class="tm-quote">"Teddy me resolvió una duda de cobertura a las 11 de la noche. Cero esperas, cero letra pequeña."</p>
+            <div class="tm-who"><div class="avatar" style="width:34px;height:34px;font-size:.8rem">L</div><div><div class="n">Laura Sánchez</div><div class="r">Cliente desde 2025</div></div></div>
+          </div>
         </div>
       </div>
     </section>
@@ -900,7 +1014,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
     <!-- CTA -->
     <section class="section-pad" style="padding-bottom:0">
       <div class="container">
-        <div class="cta-block reveal">
+        <div class="cta-block glow-border reveal">
           <h2 style="color:#fff">¿Preparado para simplificar tu protección?</h2>
           <p>Únete a WynCare y descubre una forma más inteligente de proteger lo que importa.</p>
           <div class="cta-actions">

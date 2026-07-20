@@ -26,6 +26,13 @@ const qsa = (sel, ctx) => (ctx || document).querySelectorAll(sel);
 
 function formatCurrency(n) { return n.toFixed(2).replace('.', ','); }
 
+function formatEsNumber(n, decimals) {
+  var fixed = n.toFixed(decimals || 0);
+  var parts = fixed.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return parts.join(',');
+}
+
 function getTier(points) {
   if (points >= 12000) return 'Platino';
   if (points >= 6000) return 'Oro';
@@ -471,8 +478,16 @@ document.addEventListener('click', function(e) {
 /* ---------- SCROLL EFFECTS ---------- */
 (function() {
   var nav = $('siteNav');
+  var progress = $('scrollProgress');
   if (nav) {
-    window.addEventListener('scroll', function() { nav.classList.toggle('is-scrolled', window.scrollY > 20); }, { passive: true });
+    window.addEventListener('scroll', function() {
+      nav.classList.toggle('is-scrolled', window.scrollY > 20);
+      if (progress) {
+        var h = document.documentElement;
+        var max = h.scrollHeight - h.clientHeight;
+        progress.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
+      }
+    }, { passive: true });
   }
 
   var revealEls = qsa('.reveal');
@@ -496,6 +511,45 @@ document.addEventListener('click', function(e) {
       card.style.transform = 'rotateX(' + ((y - r.height/2) / r.height * -10) + 'deg) rotateY(' + ((x - r.width/2) / r.width * 10) + 'deg)';
     });
     stage.addEventListener('mouseleave', function() { card.style.transform = ''; });
+  }
+
+  /* animated counters (hero stats, about badges) */
+  var counters = qsa('[data-count-to]');
+  if (counters.length && 'IntersectionObserver' in window) {
+    var countObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        countObs.unobserve(entry.target);
+        var el = entry.target;
+        var to = parseFloat(el.getAttribute('data-count-to'));
+        var decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
+        var prefix = el.getAttribute('data-prefix') || '';
+        var suffix = el.getAttribute('data-suffix') || '';
+        var duration = 1400, start = null;
+        function tick(ts) {
+          if (start === null) start = ts;
+          var p = Math.min((ts - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - p, 3);
+          var val = to * eased;
+          el.textContent = prefix + formatEsNumber(val, decimals) + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.4 });
+    for (var ci = 0; ci < counters.length; ci++) countObs.observe(counters[ci]);
+  }
+
+  /* spotlight cursor glow on cards */
+  var spotlights = qsa('.spotlight');
+  for (var si = 0; si < spotlights.length; si++) {
+    (function(el) {
+      el.addEventListener('mousemove', function(e) {
+        var r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+        el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+      });
+    })(spotlights[si]);
   }
 })();
 
