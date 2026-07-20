@@ -22,6 +22,8 @@
   --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
   --shadow-1:0 20px 50px -26px rgba(0,0,0,.65);--shadow-2:0 34px 90px -34px rgba(0,0,0,.75);
+  --ease-out-expo:cubic-bezier(.16,1,.3,1);
+  --violet:#8C7CF0;--violet-rgb:140,124,240;--teal:#4FD6C4;--teal-rgb:79,214,196;
 }
 html[data-theme="light"]{
   --canvas:#F6F4EE;--surface:#FFFFFF;--surface-2:#FBF9F3;--surface-3:#F1EDE1;
@@ -79,10 +81,46 @@ h3{font-size:1.02rem;font-weight:650}
 html[data-theme="light"] .theme-toggle .i-sun{opacity:1;transform:none}
 html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg) scale(.5)}
 
+/* ===== SHARED MOTION / PREMIUM UTILITIES ===== */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+.grain{position:relative}
+.grain::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.3;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+.aurora{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none}
+@keyframes aurora-float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-4%) scale(1.08)}66%{transform:translate(-3%,3%) scale(.95)}}
+@media (prefers-reduced-motion:reduce){.aurora{animation:none!important}}
+
+/* cursor-follow glow on data cards — driven by --mx/--my set in JS, no extra classes needed in markup */
+.kpi-card,.panel,.integ-card,.settings-card{position:relative;isolation:isolate}
+.kpi-card::before,.panel::before,.integ-card::before,.settings-card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:0;
+  background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),rgba(var(--gold-rgb),.14),transparent 65%);
+}
+.kpi-card:hover::before,.panel:hover::before,.integ-card:hover::before,.settings-card:hover::before{opacity:1}
+.kpi-card>*,.panel>*,.integ-card>*,.settings-card>*{position:relative;z-index:1}
+
+/* entrance animation replayed on every tab switch (see switchTab in script) */
+@keyframes tab-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.tab-anim{animation:tab-in .5s var(--ease-out-expo) both}
+
+/* sheen sweep on primary buttons */
+.btn-primary{position:relative;overflow:hidden}
+.btn-primary::after{
+  content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(115deg,transparent,rgba(255,255,255,.5),transparent);
+  transform:skewX(-18deg);transition:left .6s var(--ease-out-expo);pointer-events:none;
+}
+.btn-primary:hover::after{left:130%}
+
 /* ===== LOGIN GATE ===== */
-.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;overflow:hidden;
   background:radial-gradient(60% 55% at 88% 8%,rgba(var(--gold-rgb),.14) 0%,transparent 60%),radial-gradient(120% 100% at 100% 0%,#141D33 0%,#0A0F1C 45%,#070B15 100%)}
-.gate-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1.8rem;box-shadow:var(--shadow-2)}
+.gate .aurora-1{width:40vw;height:40vw;max-width:560px;max-height:560px;top:-16%;right:-8%;background:radial-gradient(circle,rgba(var(--violet-rgb),.3),transparent 70%);animation:aurora-float 22s ease-in-out infinite}
+.gate .aurora-2{width:28vw;height:28vw;max-width:400px;max-height:400px;bottom:-12%;left:-6%;background:radial-gradient(circle,rgba(var(--teal-rgb),.2),transparent 70%);animation:aurora-float 26s ease-in-out infinite reverse}
+.gate-card{position:relative;z-index:1;width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1.8rem;box-shadow:var(--shadow-2)}
 .gate-brand{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.05rem;justify-content:center}
 .gate-brand .mark{width:32px;height:32px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center}
 .gate-brand .mark svg{width:16px;height:16px;stroke:var(--gold-ink)}
@@ -110,7 +148,8 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
 .sb-group-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,242,236,.35);padding:.9rem .6rem .3rem}
 .sb-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .6rem;border-radius:9px;font-size:.82rem;font-weight:500;color:rgba(244,242,236,.64);text-align:left;width:100%}
 .sb-item svg{width:15px;height:15px;flex:none}
-.sb-item[aria-current="page"]{background:rgba(var(--gold-rgb),.14);color:#E8C98F}
+.sb-item{transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.sb-item[aria-current="page"]{background:rgba(var(--gold-rgb),.14);color:#E8C98F;box-shadow:inset 3px 0 0 var(--gold)}
 .sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
 
 .main{background:var(--canvas);min-width:0}
@@ -173,14 +212,14 @@ html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg
 
 .bar-chart{display:flex;align-items:flex-end;gap:.7rem;height:150px;margin-top:.5rem}
 .bar-chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.4rem;height:100%}
-.bar-chart .bar .fill{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold-strong),var(--gold));min-height:4px}
+.bar-chart .bar .fill{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold-strong),var(--gold));min-height:4px;transition:height 1s var(--ease-out-expo)}
 .bar-chart .bar .lbl{font-size:.66rem;color:var(--text-3)}
 .bar-chart .bar .val{font-family:var(--font-mono);font-size:.68rem;color:var(--text-2)}
 
 .hbar-row{display:flex;align-items:center;gap:.7rem;margin-top:.8rem}
 .hbar-row .lbl{width:76px;font-size:.78rem;color:var(--text-2);flex:none}
 .hbar-row .track{flex:1;height:7px;background:var(--surface-3);border-radius:var(--radius-full);overflow:hidden}
-.hbar-row .fill{height:100%;border-radius:var(--radius-full);background:var(--gold)}
+.hbar-row .fill{height:100%;border-radius:var(--radius-full);background:var(--gold);transition:width 1s var(--ease-out-expo)}
 .hbar-row .val{width:38px;text-align:right;font-family:var(--font-mono);font-size:.74rem;flex:none}
 
 .funnel-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border)}
@@ -362,7 +401,9 @@ table.data tbody tr:hover{background:var(--surface-2)}
 </svg>
 
 <!-- ============ LOGIN GATE ============ -->
-<div class="gate" id="gate">
+<div class="gate grain" id="gate">
+  <span class="aurora aurora-1" aria-hidden="true"></span>
+  <span class="aurora aurora-2" aria-hidden="true"></span>
   <div class="gate-card">
     <div class="gate-brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>Wyn<em>Care</em></div>
     <h1>Panel de Administración</h1>
@@ -670,6 +711,7 @@ document.getElementById('gateForm').addEventListener('submit', function(e){
   document.getElementById('app').classList.add('is-active');
   document.body.classList.toggle('is-readonly', currentRole === 'Solo lectura');
   applyRoleRestrictions();
+  animateTabIn(document.getElementById('tab-resumen'));
 });
 document.getElementById('logoutBtn').addEventListener('click', function(){
   document.getElementById('app').classList.remove('is-active');
@@ -697,13 +739,23 @@ setupDropdown('userBtn', 'userDropdown');
 document.addEventListener('click', function(){ document.querySelectorAll('.dropdown.is-open').forEach(function(d){ d.classList.remove('is-open'); }); });
 
 /* ---------- ROUTER (sidebar tabs) ---------- */
+function animateTabIn(panel){
+  if (!panel) return;
+  var animated = panel.querySelectorAll('.kpi-card,.panel,.table-card,.settings-card,.integ-card');
+  animated.forEach(function(el, i){
+    el.classList.remove('tab-anim');
+    void el.offsetWidth;
+    el.style.animationDelay = Math.min(i * 40, 320) + 'ms';
+    el.classList.add('tab-anim');
+  });
+}
 function switchTab(tab){
   document.querySelectorAll('.sb-item[data-tab]').forEach(function(item){
     if (item.dataset.tab === tab) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
   });
   document.querySelectorAll('.admin-tab').forEach(function(p){ p.classList.remove('is-active'); });
   var panel = document.getElementById('tab-' + tab);
-  if (panel) panel.classList.add('is-active');
+  if (panel) { panel.classList.add('is-active'); animateTabIn(panel); }
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.sb-item[data-tab]').forEach(function(item){
@@ -1010,8 +1062,11 @@ function renderBarChart(elId, data){
   var max = Math.max.apply(null, data.map(function(d){ return d.v; }));
   el.innerHTML = data.map(function(d){
     var pct = Math.max(6, Math.round((d.v/max)*100));
-    return '<div class="bar"><div class="val">'+d.v+'</div><div class="fill" style="height:'+pct+'%"></div><div class="lbl">'+d.l+'</div></div>';
+    return '<div class="bar"><div class="val">'+d.v+'</div><div class="fill" style="height:0" data-target="'+pct+'%"></div><div class="lbl">'+d.l+'</div></div>';
   }).join('');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    el.querySelectorAll('.fill').forEach(function(f){ f.style.height = f.getAttribute('data-target'); });
+  }); });
 }
 renderBarChart('chartPolizas', [{l:'Feb',v:58},{l:'Mar',v:64},{l:'Abr',v:71},{l:'May',v:80},{l:'Jun',v:76},{l:'Jul',v:92}]);
 renderBarChart('chartClientes', [{l:'S1',v:22},{l:'S2',v:19},{l:'S3',v:27},{l:'S4',v:31},{l:'S5',v:24},{l:'S6',v:35}]);
@@ -1021,8 +1076,11 @@ function renderHBars(elId, data){
   var max = Math.max.apply(null, data.map(function(d){ return d.v; }));
   el.innerHTML = data.map(function(d){
     var pct = Math.round((d.v/max)*100);
-    return '<div class="hbar-row"><span class="lbl">'+d.l+'</span><div class="track"><div class="fill" style="width:'+pct+'%"></div></div><span class="val">'+d.v+'%</span></div>';
+    return '<div class="hbar-row"><span class="lbl">'+d.l+'</span><div class="track"><div class="fill" style="width:0" data-target="'+pct+'%"></div></div><span class="val">'+d.v+'%</span></div>';
   }).join('');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    el.querySelectorAll('.fill').forEach(function(f){ f.style.width = f.getAttribute('data-target'); });
+  }); });
 }
 renderHBars('hbarTipos', [{l:'Coche',v:34},{l:'Hogar',v:26},{l:'Salud',v:21},{l:'Vida',v:12},{l:'Empresa',v:7}]);
 renderHBars('hbarCanjes', [{l:'Regalo',v:38},{l:'Movilidad',v:27},{l:'Bienestar',v:19},{l:'Ocio',v:11},{l:'Salud',v:5}]);
@@ -1094,6 +1152,15 @@ if (sbToggle && sbOverlay && sidebar){
 // Also close sidebar on Escape key
 document.addEventListener("keydown", function(e){
   if(e.key === "Escape" && sidebar && sidebar.classList.contains("is-open")) closeSidebar();
+});
+
+/* ---------- CURSOR SPOTLIGHT (kpi/panel/integ/settings cards) ---------- */
+document.querySelectorAll('.kpi-card,.panel,.integ-card,.settings-card').forEach(function(el){
+  el.addEventListener('mousemove', function(e){
+    var r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
 });
 
 })();
