@@ -1,0 +1,622 @@
+/* ============================================================
+   WynCare app.js v1 — Rediseño completo con Supabase
+   ============================================================ */
+
+/* ---------- CONFIG ---------- */
+const SUPABASE_URL = 'https://leiyhsgajiuxxdznivvl.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlaXloc2dhaml1eHhkem5pdnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjkzMTIsImV4cCI6MjA5OTU0NTMxMn0.2E_yyH3PPIfQQxK1O8v8seDh-lcVQ4Bna35SXAq2GXg';
+const SUPABASE_SERVICE_ROLE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlaXloc2dhaml1eHhkem5pdnZsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Mzk2OTMxMiwiZXhwIjoyMDk5NTQ1MzEyfQ.9zf2nZwDx5GDvI4U0vdoFEOQ3AMncvUO6TKCvD0ExD8';
+const ADMIN_EMAILS = ['admin@wyncare.es', 'gabriiel.calvo88@gmail.com', 'alex@wyncare.com'];
+
+/* ---------- SUPABASE CLIENT ---------- */
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { autoRefreshToken: true, persistSession: true, storageKey: 'wyncare-auth', flowType: 'pkce' }
+});
+
+/* ---------- STATE ---------- */
+let currentUser = null;
+let currentProfile = null;
+let currentPolicies = [];
+let selectedQuote = { name: 'Coche', price: 35, pts: 700, cov: 'Cobertura completa coche' };
+
+/* ---------- UTILS ---------- */
+const $ = id => document.getElementById(id);
+const qs = (sel, ctx) => (ctx || document).querySelector(sel);
+const qsa = (sel, ctx) => (ctx || document).querySelectorAll(sel);
+
+function formatCurrency(n) { return n.toFixed(2).replace('.', ','); }
+
+function getTier(points) {
+  if (points >= 12000) return 'Platino';
+  if (points >= 6000) return 'Oro';
+  if (points >= 2000) return 'Plata';
+  return 'Bronce';
+}
+
+function getPolicyIcon(type) {
+  const m = { 'coche': 'i-car', 'hogar': 'i-home', 'salud': 'i-heart', 'vida': 'i-gem', 'empresa': 'i-building', 'telemedicina': 'i-pulse' };
+  return m[(type || '').toLowerCase()] || 'i-shield';
+}
+
+/* ---------- VIEWS ---------- */
+function showView(id) {
+  qsa('.view, #view-app').forEach(v => v.classList.remove('is-active'));
+  const el = $(id);
+  if (el) { el.classList.add('is-active'); if (id === 'view-app') el.style.display = 'grid'; }
+  window.scrollTo(0, 0);
+}
+
+function showAppTab(id) {
+  qsa('.app-tab').forEach(t => t.classList.remove('is-active'));
+  const tab = $(id);
+  if (tab) tab.classList.add('is-active');
+  qsa('.app-menu-item').forEach(item => {
+    item.removeAttribute('aria-current');
+    if (item.getAttribute('data-tab') === id) item.setAttribute('aria-current', 'page');
+  });
+}
+
+/* ---------- THEME ---------- */
+function getTheme() { return localStorage.getItem('wyncare-theme') || 'dark'; }
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('wyncare-theme', t);
+  const sw = $('settingsThemeSwitch');
+  if (sw) sw.setAttribute('aria-checked', t === 'dark');
+}
+function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+document.addEventListener('click', e => { const btn = e.target.closest('[data-theme-toggle]'); if (btn) toggleTheme(); });
+
+/* ---------- ROUTER ---------- */
+const ROUTES = { '/': 'view-home', '/login': 'view-login', '/registro': 'view-registro', '/recuperar': 'view-recuperar', '/404': 'view-404' };
+
+function navigate(hash) {
+  const path = hash.replace(/^#/, '') || '/';
+  const appMatch = path.match(/^\/app(?:\/(\w+))?/);
+  if (appMatch) {
+    if (!currentUser) { navigate('#/login'); return; }
+    showView('view-app');
+    showAppTab('tab-' + (appMatch[1] || 'resumen'));
+    return;
+  }
+  if (ROUTES[path]) { showView(ROUTES[path]); return; }
+  if (path === '/admin') {
+    if (!currentUser) { navigate('#/login'); return; }
+    if (!ADMIN_EMAILS.includes(currentUser.email)) { showView('view-404'); return; }
+    loadAdminPanel();
+    return;
+  }
+  showView('view-404');
+}
+
+window.addEventListener('hashchange', () => navigate(location.hash));
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#/"]');
+  if (a) { e.preventDefault(); navigate(a.getAttribute('href')); }
+  const anchor = e.target.closest('a[href^="#"]:not([href^="#/"])');
+  if (anchor) { e.preventDefault(); const t = document.querySelector(anchor.getAttribute('href')); if (t) t.scrollIntoView({ behavior: 'smooth' }); }
+});
+
+/* ---------- AUTH ---------- */
+async function handleLogin(email, password) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    currentUser = data.user;
+    await loadUserData();
+    navigate('#/app');
+  } catch (err) {
+    alert('Error al iniciar sesión: ' + err.message);
+  }
+}
+
+async function handleRegister(name, email, password) {
+  try {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    if (data?.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id, email, full_name: name, created_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    }
+    localStorage.setItem('wyncare_pending_confirmation', email);
+    alert('Registro completado. Revisa tu correo para confirmar la cuenta.');
+    navigate('#/login');
+  } catch (err) {
+    alert('Error al registrarse: ' + err.message);
+  }
+}
+
+async function handleLogout() {
+  await supabase.auth.signOut();
+  currentUser = null; currentProfile = null;
+  document.documentElement.classList.remove('admin-mode');
+  $('adminPanel')?.remove();
+  navigate('#/');
+}
+
+async function loadUserSession() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      await loadUserData();
+      const path = location.hash.replace(/^#/, '') || '/';
+      if (path.startsWith('/app') || path === '/admin') navigate(location.hash);
+    }
+  } catch (err) { console.warn('Session load error:', err.message); }
+
+}
+
+async function loadUserData() {
+  if (!currentUser) return;
+  try {
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+    currentProfile = profile || { full_name: currentUser.email?.split('@')[0] || 'Usuario' };
+    const { data: policies } = await supabase.from('policies').select('*').eq('user_id', currentUser.id);
+    currentPolicies = policies || [];
+  } catch (err) {
+    currentProfile = { full_name: currentUser.email?.split('@')[0] || 'Usuario' };
+  }
+  updateSidebar();
+  updateDashboard();
+  updatePoliciesTab();
+  updateWynpointsTab();
+  updateSettings();
+}
+
+/* ---------- DASHBOARD ---------- */
+function updateSidebar() {
+  const name = currentProfile?.full_name || currentUser?.email?.split('@')[0] || 'Usuario';
+  const email = currentUser?.email || '';
+  $('dAvatar').textContent = (name.charAt(0) || 'U').toUpperCase();
+  $('dName').textContent = name;
+  $('dMail').textContent = email;
+}
+
+function updateDashboard() {
+  $('dGreetName').textContent = currentProfile?.full_name || 'Usuario';
+  const active = currentPolicies.filter(p => p.status === 'active' || p.status === 'Activo');
+  const monthly = active.reduce((s, p) => s + (parseFloat(p.premium) || 0), 0);
+  const pts = currentProfile?.wynpoints || 0;
+
+  const cards = qsa('.quick-card');
+  if (cards.length >= 4) {
+    cards[0].querySelector('.qn').textContent = active.length;
+    cards[1].querySelector('.qn').textContent = formatCurrency(monthly) + '€';
+    cards[2].querySelector('.qn').textContent = pts.toLocaleString();
+    cards[3].querySelector('.qn').textContent = '0';
+    cards[2].querySelector('.qt').textContent = 'Nivel ' + getTier(pts);
+  }
+
+  const dashPanel = qs('#tab-resumen .dash-panel:first-child');
+  if (dashPanel) {
+    const listEl = dashPanel.querySelector('.policy-list') || (() => {
+      const d = document.createElement('div'); d.className = 'policy-list';
+      const e = dashPanel.querySelector('.empty-block');
+      if (e) e.replaceWith(d); else dashPanel.appendChild(d);
+      return d;
+    })();
+    if (active.length === 0) {
+      listEl.innerHTML = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todavía no tienes seguros activos. Cotiza el primero desde "Presupuestos".</p></div>';
+    } else {
+      listEl.innerHTML = active.slice(0, 4).map(p =>
+        '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + (p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + (p.reference || '—') + '</div></div><span class="st active">Activo</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span></div>'
+      ).join('');
+    }
+  }
+
+  if (currentUser) {
+    const pEl = qs('.pass-points .pts');
+    const lEl = qs('.pass-points .lbl');
+    const hEl = qs('.pass-holder strong');
+    if (pEl) pEl.textContent = pts.toLocaleString();
+    if (lEl) lEl.textContent = 'WynPoints · ' + getTier(pts);
+    if (hEl) hEl.textContent = currentProfile?.full_name || 'Usuario';
+  }
+}
+
+function updatePoliciesTab() {
+  const container = qs('#tab-seguros .dash-panel');
+  if (!container) return;
+  if (currentPolicies.length === 0) {
+    container.innerHTML = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todavía no tienes pólizas. Cotiza desde "Presupuestos".</p></div>';
+  } else {
+    container.innerHTML = currentPolicies.map(p => {
+      const a = (p.status === 'active' || p.status === 'Activo');
+      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + (p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + (p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span><a class="doc-link" href="#">Documentos</a></div>';
+    }).join('');
+  }
+}
+
+function updateWynpointsTab() {
+  const pts = currentProfile?.wynpoints || 0;
+  const tier = getTier(pts);
+  const tiers = ['Bronce', 'Plata', 'Oro', 'Platino'];
+  const idx = tiers.indexOf(tier);
+  const ptsEl = qs('#tab-wynpoints .points-num');
+  if (ptsEl) ptsEl.innerHTML = pts.toLocaleString() + ' <small>pts</small>';
+  const pill = qs('#tab-wynpoints .tier-pill');
+  if (pill) pill.textContent = 'Nivel ' + tier;
+  const track = qs('#tab-wynpoints .tier-track');
+  if (track) {
+    track.querySelectorAll('.tier-step').forEach((s, i) => {
+      s.className = 'tier-step';
+      if (i < idx) s.classList.add('done');
+      else if (i === idx) s.classList.add('done', 'current');
+    });
+  }
+  const earnList = qs('#tab-wynpoints .wp-earn');
+  if (earnList && currentPolicies.length > 0) {
+    const pm = { 'coche': 700, 'hogar': 600, 'salud': 1500, 'vida': 2500, 'empresa': 3500, 'telemedicina': 0 };
+    earnList.innerHTML = currentPolicies.map(p => {
+      const pts2 = pm[(p.type || p.policy_type || '').toLowerCase()] || 500;
+      return '<div><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg><span class="nm">' + (p.type || p.policy_type || 'Seguro') + '</span><span class="pt">+' + pts2 + ' pts</span></div>';
+    }).join('');
+  }
+}
+
+function updateSettings() {
+  if (!currentProfile) return;
+  const n = $('settName'); const e = $('settEmail');
+  if (n) n.value = currentProfile.full_name || '';
+  if (e) e.value = currentUser?.email || '';
+}
+
+/* ---------- QUOTES ---------- */
+function initQuoteSelector() {
+  const grid = $('typeGrid');
+  if (!grid) return;
+  grid.addEventListener('click', function(e) {
+    var card = e.target.closest('.type-card');
+    if (!card) return;
+    qsa('.type-card').forEach(function(c) { c.setAttribute('aria-pressed', 'false'); });
+    card.setAttribute('aria-pressed', 'true');
+    selectedQuote = { name: card.dataset.name, price: parseFloat(card.dataset.price), pts: parseInt(card.dataset.pts), cov: card.dataset.cov };
+    $('prevPrice').textContent = formatCurrency(selectedQuote.price);
+    $('prevName').textContent = selectedQuote.name;
+    $('prevCov').textContent = selectedQuote.cov;
+    $('prevPts').textContent = '+ ' + selectedQuote.pts.toLocaleString() + ' WynPoints';
+    $('prevRef').style.display = 'none'; $('prevRef').textContent = '';
+    var sb = $('successBlock');
+    if (sb) sb.classList.remove('is-shown');
+    $('saveQuoteBtn').style.display = '';
+  });
+}
+
+async function saveQuote() {
+  if (!currentUser) { navigate('#/login'); return; }
+  var btn = $('saveQuoteBtn'); btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    var ref = 'WC-' + Date.now().toString(36).toUpperCase();
+    var { error } = await supabase.from('quotes').insert({
+      user_id: currentUser.id, quote_type: selectedQuote.name, premium: selectedQuote.price,
+      coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts, reference: ref, status: 'pending', created_at: new Date().toISOString()
+    });
+    if (error) throw error;
+    $('successRef').textContent = ref;
+    var sb = $('successBlock');
+    if (sb) sb.classList.add('is-shown');
+    btn.style.display = 'none';
+    $('prevRef').textContent = '\u2714 Cotizaci\u00f3n guardada';
+    $('prevRef').style.display = 'block';
+  } catch (err) { alert('Error al guardar: ' + err.message); }
+  btn.disabled = false; btn.textContent = 'Guardar cotizaci\u00f3n';
+}
+
+/* ---------- FORMS ---------- */
+function initLoginForm() {
+  var loginForm = $('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', function(e) { e.preventDefault(); handleLogin($('loginEmail').value, $('loginPass').value); });
+  }
+  var regForm = $('registerForm');
+  if (regForm) {
+    regForm.addEventListener('submit', function(e) { e.preventDefault(); handleRegister($('regName').value, $('regEmail').value, $('regPass').value); });
+  }
+  var forgotForm = $('forgotForm');
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var email = $('forgotEmail').value;
+      $('forgotSuccess').style.display = 'block';
+      $('forgotSuccess').querySelector('p').textContent = 'Si ' + email + ' est\u00e1 registrado, recibir\u00e1s instrucciones para restablecer tu contrase\u00f1a.';
+      supabase.auth.resetPasswordForEmail(email).catch(function() {});
+    });
+  }
+  var sq = $('saveQuoteBtn');
+  if (sq) sq.addEventListener('click', saveQuote);
+  var lo = $('logoutBtn');
+  if (lo) lo.addEventListener('click', function(e) { e.preventDefault(); handleLogout(); });
+  var saveBtn = qs('#tab-ajustes .btn-primary');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async function() {
+      var name = $('settName')?.value;
+      if (!name || !currentUser) return;
+      await supabase.from('profiles').update({ full_name: name }).eq('id', currentUser.id);
+      currentProfile.full_name = name;
+      updateSidebar(); updateDashboard();
+      alert('Perfil actualizado \u2713');
+    });
+  }
+  var themeSw = $('settingsThemeSwitch');
+  if (themeSw) {
+    themeSw.addEventListener('click', function() { toggleTheme(); });
+  }
+  document.querySelectorAll('[data-demo-switch]').forEach(function(sw) {
+    sw.addEventListener('click', function() {
+      var c = sw.getAttribute('aria-checked') === 'true';
+      sw.setAttribute('aria-checked', !c);
+    });
+  });
+}
+
+/* ---------- TELEMEDICINE ---------- */
+function initTelemedicina() {
+  document.addEventListener('click', function(e) {
+    var row = e.target.closest('.tele-row[data-spec]');
+    if (!row) return;
+    var spec = row.dataset.spec;
+    $('teleBookPanel').classList.add('is-shown');
+    $('teleBookText').textContent = 'Videoconsulta de ' + spec + ' agendada. Recibir\u00e1s un enlace 5 min antes.';
+    $('teleBookPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+}
+
+/* ---------- REWARDS ---------- */
+function initRewards() {
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.redeem-btn');
+    if (!btn) return;
+    var row = btn.closest('.reward-row');
+    var name = row?.querySelector('.nm')?.textContent || 'Recompensa';
+    var cost = parseInt(row?.querySelector('.cost')?.textContent || '0');
+    if (confirm('\u00bfCanjear "' + name + '" por ' + cost + ' WynPoints?')) {
+      btn.textContent = '\u2714 Canjeado'; btn.disabled = true; btn.style.opacity = '0.6';
+    }
+  });
+}
+
+/* ---------- TEDDY CHAT ---------- */
+var teddyResponses = [
+  { match: /seguro/i, text: 'Depende de lo que necesites proteger. \u00bfCoche, hogar, salud, vida o empresa? Puedo darte una estimaci\u00f3n r\u00e1pida.' },
+  { match: /wynpoints|punto/i, text: 'Los WynPoints se acumulan con cada seguro activo. Coche \u2192 700 pts, Hogar \u2192 600 pts, Salud \u2192 1.500 pts, Vida \u2192 2.500 pts. \u00a1Canj\u00e9alos por recompensas!' },
+  { match: /asesor|humano|hablar/i, text: 'Puedo conectar con un asesor. Dime tu n\u00famero y te llamamos en horario comercial (L-V 9:00-18:00).' },
+  { match: /hola|buenas|hey|b.*d[i\u00ed]a/i, text: '\u00a1Hola! Soy Teddy \ud83d\udc3b, tu asistente de WynCare. \u00bfEn qu\u00e9 puedo ayudarte?' },
+];
+
+function addTeddyMessage(text, isUser) {
+  var body = $('teddyBody'); if (!body) return;
+  var div = document.createElement('div');
+  div.className = 't-msg' + (isUser ? ' user' : '');
+  div.innerHTML = '<span class="av">' + (isUser ? '<svg><use href="#i-user"/></svg>' : '<svg class="icon" style="stroke:var(--gold-ink);width:12px;height:12px"><use href="#i-chat"/></svg>') + '</span><div class="bubble">' + text + '</div>';
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function teddyTyping() {
+  var body = $('teddyBody'); if (!body) return;
+  var div = document.createElement('div'); div.className = 't-msg'; div.id = 'teddyTyping';
+  div.innerHTML = '<span class="av"><svg class="icon" style="stroke:var(--gold-ink);width:12px;height:12px"><use href="#i-chat"/></svg></span><div class="t-typing"><span></span><span></span><span></span></div>';
+  body.appendChild(div); body.scrollTop = body.scrollHeight;
+}
+
+(function() {
+  var launcher = $('teddyLauncher');
+  var close = $('teddyClose');
+  var send = $('teddySend');
+  var input = $('teddyInput');
+  var panel = $('teddyPanel');
+
+  if (launcher) {
+    launcher.addEventListener('click', function() {
+      if (panel) panel.classList.add('is-open');
+      var body = $('teddyBody');
+      if (body && body.children.length === 0) addTeddyMessage('\u00a1Hola! Soy Teddy \ud83d\udc3b, tu asistente de WynCare. Puedo ayudarte con seguros, WynPoints, telemedicina y m\u00e1s. \u00bfQu\u00e9 necesitas?');
+    });
+  }
+  if (close) close.addEventListener('click', function() { if (panel) panel.classList.remove('is-open'); });
+  if (send) {
+    send.addEventListener('click', function() {
+      if (!input) return;
+      var msg = input.value.trim(); if (!msg) return;
+      input.value = ''; addTeddyMessage(msg, true); teddyTyping();
+      setTimeout(function() {
+        var el = $('teddyTyping'); if (el) el.remove();
+        var r = null;
+        for (var i = 0; i < teddyResponses.length; i++) {
+          if (teddyResponses[i].match.test(msg)) { r = teddyResponses[i]; break; }
+        }
+        addTeddyMessage(r ? r.text : 'Entiendo. D\u00e9jame consultar... \u00a1Claro! Para eso puedes ir a la secci\u00f3n correspondiente en tu \u00c1rea Cliente o preguntarme algo m\u00e1s concreto.');
+      }, 600 + Math.random() * 900);
+    });
+  }
+  if (input) {
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (send) send.click(); } });
+  }
+})();
+
+document.addEventListener('click', function(e) {
+  var chip = e.target.closest('.t-chip');
+  if (chip && chip.closest('#teddySuggestions')) {
+    var text = chip.textContent;
+    var launcher = $('teddyLauncher');
+    if (launcher) launcher.click();
+    setTimeout(function() {
+      addTeddyMessage(text, true); teddyTyping();
+      setTimeout(function() {
+        var el = $('teddyTyping'); if (el) el.remove();
+        var r = null;
+        for (var i = 0; i < teddyResponses.length; i++) {
+          if (teddyResponses[i].match.test(text)) { r = teddyResponses[i]; break; }
+        }
+        addTeddyMessage(r ? r.text : 'Claro, d\u00e9jame ayudarte.');
+      }, 700);
+    }, 300);
+  }
+});
+
+/* ---------- MOBILE NAV ---------- */
+(function() {
+  var toggle = $('navToggle');
+  if (toggle) {
+    toggle.addEventListener('click', function() {
+      var nav = $('siteNav');
+      var isOpen = nav.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', isOpen);
+    });
+  }
+})();
+
+/* ---------- SCROLL EFFECTS ---------- */
+(function() {
+  var nav = $('siteNav');
+  if (nav) {
+    window.addEventListener('scroll', function() { nav.classList.toggle('is-scrolled', window.scrollY > 20); }, { passive: true });
+  }
+
+  var revealEls = qsa('.reveal');
+  if (revealEls.length && 'IntersectionObserver' in window) {
+    var obs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) { entry.target.classList.add('is-visible'); obs.unobserve(entry.target); }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    for (var i = 0; i < revealEls.length; i++) obs.observe(revealEls[i]);
+  } else {
+    for (var i = 0; i < revealEls.length; i++) revealEls[i].classList.add('is-visible');
+  }
+
+  var card = $('tiltCard');
+  var stage = card ? card.closest('.tilt-stage') : null;
+  if (card && stage) {
+    stage.addEventListener('mousemove', function(e) {
+      var r = stage.getBoundingClientRect();
+      var x = e.clientX - r.left, y = e.clientY - r.top;
+      card.style.transform = 'rotateX(' + ((y - r.height/2) / r.height * -10) + 'deg) rotateY(' + ((x - r.width/2) / r.width * 10) + 'deg)';
+    });
+    stage.addEventListener('mouseleave', function() { card.style.transform = ''; });
+  }
+})();
+
+/* ---------- FOOTER YEAR ---------- */
+(function() {
+  var yearEl = $('year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
+})();
+
+/* ---------- ADMIN PANEL ---------- */
+async function loadAdminPanel() {
+  showView('view-home');
+  var existing = $('adminPanel');
+  if (existing) existing.remove();
+  document.documentElement.classList.add('admin-mode');
+
+  if (!document.querySelector('#adminStyles')) {
+    var s = document.createElement('style'); s.id = 'adminStyles';
+    s.textContent = '.admin-overlay{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.7);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center}.admin-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:min(94vw,1100px);max-height:90vh;overflow-y:auto;padding:2rem;position:relative}.admin-panel .close-btn{position:absolute;top:1rem;right:1rem;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center}.admin-panel h2{font-size:1.3rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}.admin-panel .sub{color:var(--text-2);font-size:.85rem;margin-bottom:1.5rem}.admin-table{width:100%;border-collapse:collapse;font-size:.85rem}.admin-table th{text-align:left;padding:.65rem .7rem;border-bottom:1px solid var(--border);color:var(--text-2);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}.admin-table td{padding:.65rem .7rem;border-bottom:1px solid var(--border)}.admin-table tr:last-child td{border-bottom:0}.admin-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.6rem;overflow-x:auto}.admin-tab{padding:.5rem .9rem;border-radius:var(--radius-sm);font-size:.82rem;font-weight:500;color:var(--text-2);white-space:nowrap}.admin-tab[aria-current]{background:rgba(var(--gold-rgb),.14);color:var(--gold)}.badge-admin{font-size:.65rem;font-weight:700;background:var(--danger);color:#fff;padding:.2rem .5rem;border-radius:var(--radius-full);text-transform:uppercase;letter-spacing:.04em}.admin-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem;margin-bottom:1.2rem}.admin-stat{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.85rem;text-align:center}.admin-stat .n{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold)}.admin-stat .l{font-size:.72rem;color:var(--text-2);margin-top:.15rem}';
+    document.head.appendChild(s);
+  }
+
+  var panel = document.createElement('div'); panel.className = 'admin-overlay'; panel.id = 'adminPanel';
+  panel.innerHTML = '<div class="admin-panel"><button class="close-btn" id="adminClose"><svg class="icon" style="width:15px;height:15px"><use href="#i-close"/></svg></button><h2>Panel de Administraci\u00f3n <span class="badge-admin">Admin</span></h2><p class="sub">' + (currentUser ? currentUser.email : '') + ' \u00b7 wyncare.es</p><div class="admin-tabs"><button class="admin-tab" data-admin-tab="usuarios" aria-current="true">Usuarios</button><button class="admin-tab" data-admin-tab="cotizaciones">Cotizaciones</button><button class="admin-tab" data-admin-tab="polizas">P\u00f3lizas</button><button class="admin-tab" data-admin-tab="wynpoints">WynPoints</button></div><div id="adminContent"><p style="color:var(--text-2)">Cargando datos...</p></div></div>';
+  document.body.appendChild(panel);
+
+  $('adminClose').addEventListener('click', function() { panel.remove(); document.documentElement.classList.remove('admin-mode'); navigate('#/app'); });
+  panel.addEventListener('click', function(e) { if (e.target === panel) { panel.remove(); document.documentElement.classList.remove('admin-mode'); navigate('#/app'); } });
+
+  panel.addEventListener('click', function(e) {
+    var tab = e.target.closest('[data-admin-tab]');
+    if (tab) {
+      qsa('[data-admin-tab]').forEach(function(t) { t.removeAttribute('aria-current'); });
+      tab.setAttribute('aria-current', 'true');
+      loadAdminTab(tab.getAttribute('data-admin-tab'));
+    }
+  });
+
+  loadAdminTab('usuarios');
+}
+
+async function adminFetch(table) {
+  try {
+    var { data, error } = await supabase.from(table).select('*').limit(200);
+    if (error) {
+      var res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?limit=200', {
+        headers: { 'apikey': SUPABASE_SERVICE_ROLE, 'Authorization': 'Bearer ' + SUPABASE_SERVICE_ROLE }
+      });
+      return await res.json();
+    }
+    return data;
+  } catch(e) { return []; }
+}
+
+async function loadAdminTab(tabName) {
+  var content = $('adminContent');
+  content.innerHTML = '<p style="color:var(--text-2)">Cargando...</p>';
+  try {
+    if (tabName === 'usuarios') {
+      var profiles = await adminFetch('profiles');
+      var html = '<div class="admin-summary"><div class="admin-stat"><div class="n">' + profiles.length + '</div><div class="l">Usuarios totales</div></div><div class="admin-stat"><div class="n">' + profiles.filter(function(p) { return p.created_at; }).length + '</div><div class="l">Con perfil</div></div></div>';
+      html += '<table class="admin-table"><thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>WynPoints</th><th>Registro</th></tr></thead><tbody>';
+      for (var i = 0; i < profiles.length; i++) {
+        var p = profiles[i];
+        html += '<tr><td style="font-family:var(--font-mono);font-size:.75rem">' + ((p.id || '').substring(0, 8) || '\u2014') + '</td><td>' + (p.full_name || '\u2014') + '</td><td>' + (p.email || '\u2014') + '</td><td>' + (p.wynpoints || 0) + '</td><td>' + (p.created_at ? new Date(p.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      content.innerHTML = html;
+    } else if (tabName === 'cotizaciones') {
+      var quotes = await adminFetch('quotes');
+      var html = '<div class="admin-summary"><div class="admin-stat"><div class="n">' + quotes.length + '</div><div class="l">Cotizaciones</div></div><div class="admin-stat"><div class="n">' + quotes.filter(function(q) { return q.status === 'pending' || q.status === 'Pendiente'; }).length + '</div><div class="l">Pendientes</div></div></div>';
+      html += '<table class="admin-table"><thead><tr><th>Ref</th><th>Tipo</th><th>Prima</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>';
+      for (var i = 0; i < quotes.length; i++) {
+        var q = quotes[i];
+        html += '<tr><td>' + (q.reference || '\u2014') + '</td><td>' + (q.quote_type || '\u2014') + '</td><td>' + (q.premium || 0) + '\u20ac</td><td>' + (q.status || '\u2014') + '</td><td>' + (q.created_at ? new Date(q.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      content.innerHTML = html;
+    } else if (tabName === 'polizas') {
+      var policies = await adminFetch('policies');
+      var html = '<div class="admin-summary"><div class="admin-stat"><div class="n">' + policies.length + '</div><div class="l">P\u00f3lizas</div></div><div class="admin-stat"><div class="n">' + policies.filter(function(p) { return p.status === 'active' || p.status === 'Activo'; }).length + '</div><div class="l">Activas</div></div></div>';
+      html += '<table class="admin-table"><thead><tr><th>Ref</th><th>Tipo</th><th>Prima</th><th>Estado</th><th>Usuario</th></tr></thead><tbody>';
+      for (var i = 0; i < policies.length; i++) {
+        var p = policies[i];
+        html += '<tr><td>' + (p.reference || '\u2014') + '</td><td>' + (p.type || p.policy_type || '\u2014') + '</td><td>' + (p.premium || 0) + '\u20ac</td><td>' + (p.status || '\u2014') + '</td><td style="font-size:.75rem">' + ((p.user_id || '').substring(0, 8) || '\u2014') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      content.innerHTML = html;
+    } else if (tabName === 'wynpoints') {
+      var trans = await adminFetch('wynpoints_transactions');
+      var html = '<div class="admin-summary"><div class="admin-stat"><div class="n">' + trans.length + '</div><div class="l">Transacciones</div></div></div>';
+      html += '<table class="admin-table"><thead><tr><th>Usuario</th><th>Tipo</th><th>Puntos</th><th>Concepto</th><th>Fecha</th></tr></thead><tbody>';
+      for (var i = 0; i < trans.length; i++) {
+        var t = trans[i];
+        html += '<tr><td>' + ((t.user_id || '').substring(0, 8) || '\u2014') + '</td><td>' + (t.transaction_type || t.type || '\u2014') + '</td><td>' + (t.points || 0) + '</td><td>' + (t.description || '\u2014') + '</td><td>' + (t.created_at ? new Date(t.created_at).toLocaleDateString() : '\u2014') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+      content.innerHTML = html;
+    }
+  } catch (err) {
+    content.innerHTML = '<p style="color:var(--danger)">Error al cargar datos: ' + err.message + '</p>';
+  }
+}
+
+/* ---------- INIT ---------- */
+(function init() {
+  setTheme(getTheme());
+  initQuoteSelector();
+  initTelemedicina();
+  initRewards();
+  // Always bind forms even before Supabase loads
+  initLoginForm();
+  // Async session load
+  loadUserSession();
+  
+  // Auto-resize Teddy textarea
+  var teddyInput = $('teddyInput');
+  if (teddyInput) {
+    teddyInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 90) + 'px';
+    });
+  }
+})();

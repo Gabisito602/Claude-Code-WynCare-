@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WynCare — Panel de Administración</title>
+<meta name="theme-color" content="#0A0F1C">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230A0F1C'/%3E%3Cpath d='M12 4l6 2.4v5.2c0 4.3-2.9 6.9-6 7.8-3.1-.9-6-3.5-6-7.8V6.4L12 4z' fill='none' stroke='%23D8B573' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#0A0F1C;--surface:#0F1626;--surface-2:#141D33;--surface-3:#1A2440;
+  --glass-bg:rgba(255,255,255,.05);--glass-border:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.09);--border-strong:rgba(255,255,255,.18);
+  --text-1:#F4F2EC;--text-2:rgba(244,242,236,.66);--text-3:rgba(244,242,236,.4);
+  --gold:#D8B573;--gold-strong:#E8C98F;--gold-ink:#20160A;--gold-rgb:216,181,115;
+  --success:#3ED598;--success-bg:rgba(62,213,152,.13);--danger:#F2765C;--danger-bg:rgba(242,118,92,.13);
+  --warning:#E8B84B;--warning-bg:rgba(232,184,75,.14);
+  --radius-sm:10px;--radius-md:16px;--radius-lg:22px;--radius-full:999px;
+  --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --shadow-1:0 20px 50px -26px rgba(0,0,0,.65);--shadow-2:0 34px 90px -34px rgba(0,0,0,.75);
+}
+html[data-theme="light"]{
+  --canvas:#F6F4EE;--surface:#FFFFFF;--surface-2:#FBF9F3;--surface-3:#F1EDE1;
+  --glass-bg:rgba(16,22,38,.035);--glass-border:rgba(16,22,38,.09);
+  --border:rgba(16,22,38,.09);--border-strong:rgba(16,22,38,.18);
+  --text-1:#12172A;--text-2:rgba(18,23,42,.64);--text-3:rgba(18,23,42,.4);
+  --gold:#A9813C;--gold-strong:#8C6B2E;--gold-ink:#FFFFFF;--gold-rgb:169,129,60;
+  --success:#1F9463;--success-bg:#E4F5EC;--danger:#C7472F;--danger-bg:#FBE7E2;
+  --warning:#9A7415;--warning-bg:#F6ECD2;
+  --shadow-1:0 16px 40px -24px rgba(16,22,38,.16);--shadow-2:0 24px 64px -28px rgba(16,22,38,.2);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--text-1);font-family:var(--font-ui);line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .3s ease,color .3s ease}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+ul{list-style:none;margin:0;padding:0}
+h1,h2,h3,h4,p{margin:0}
+input,select,textarea{font:inherit;color:inherit;background:none;border:0}
+table{border-collapse:collapse;width:100%}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:4px}
+.icon{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:var(--font-mono)}
+h1{font-size:1.7rem;font-weight:700;letter-spacing:-.02em}
+h2{font-size:1.3rem;font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.02rem;font-weight:650}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;padding:.6rem 1.05rem;border-radius:var(--radius-full);font-weight:600;font-size:.82rem;white-space:nowrap;transition:transform .15s ease,box-shadow .15s ease,background .15s ease,opacity .15s ease}
+.btn svg{width:15px;height:15px}
+.btn-primary{background:var(--gold);color:var(--gold-ink)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 26px -14px rgba(var(--gold-rgb),.55)}
+.btn-quiet{background:var(--glass-bg);border:1px solid var(--border);color:var(--text-1)}
+.btn-quiet:hover{background:var(--surface-3)}
+.btn-icon{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2)}
+.btn-icon:hover{background:var(--surface-3);color:var(--text-1)}
+.btn:disabled{opacity:.4;cursor:default;transform:none!important}
+
+.badge{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:.7rem;font-weight:600;padding:.28rem .6rem;border-radius:var(--radius-full);white-space:nowrap}
+.tone-success{color:var(--success);background:var(--success-bg)}
+.tone-warning{color:var(--warning);background:var(--warning-bg)}
+.tone-danger{color:var(--danger);background:var(--danger-bg)}
+.tone-neutral{color:var(--text-2);background:var(--surface-3)}
+.tone-gold{color:var(--gold);background:rgba(var(--gold-rgb),.14)}
+
+.switch{--w:42px;--h:24px;width:var(--w);height:var(--h);border-radius:var(--radius-full);background:var(--surface-3);border:1px solid var(--border-strong);position:relative;flex:none;transition:background .2s ease}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-1);transition:transform .2s ease}
+.switch[aria-checked="true"]{background:var(--gold)}
+.switch[aria-checked="true"]::after{transform:translateX(18px);background:var(--gold-ink)}
+
+.theme-toggle{width:34px;height:34px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex:none;position:relative;overflow:hidden}
+.theme-toggle:hover{background:var(--glass-bg)}
+.theme-toggle svg{position:absolute;transition:transform .3s ease,opacity .3s ease}
+.theme-toggle .i-sun{opacity:0;transform:rotate(45deg) scale(.5)}
+.theme-toggle .i-moon{opacity:1;transform:none}
+html[data-theme="light"] .theme-toggle .i-sun{opacity:1;transform:none}
+html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg) scale(.5)}
+
+/* ===== LOGIN GATE ===== */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;
+  background:radial-gradient(60% 55% at 88% 8%,rgba(var(--gold-rgb),.14) 0%,transparent 60%),radial-gradient(120% 100% at 100% 0%,#141D33 0%,#0A0F1C 45%,#070B15 100%)}
+.gate-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1.8rem;box-shadow:var(--shadow-2)}
+.gate-brand{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.05rem;justify-content:center}
+.gate-brand .mark{width:32px;height:32px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center}
+.gate-brand .mark svg{width:16px;height:16px;stroke:var(--gold-ink)}
+.gate-brand em{font-style:normal;color:var(--gold)}
+.gate h1{text-align:center;margin-top:1.3rem;font-size:1.25rem}
+.gate p.sub{text-align:center;margin-top:.4rem;color:var(--text-2);font-size:.86rem}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-top:1rem}
+.field label{font-size:.76rem;font-weight:600;color:var(--text-2)}
+.field .iw{display:flex;align-items:center;gap:.5rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:.1rem .8rem;background:var(--surface-2)}
+.field .iw:focus-within{border-color:var(--gold)}
+.field .iw svg{width:15px;height:15px;color:var(--text-3)}
+.field input,.field select{flex:1;padding:.68rem 0;width:100%}
+.field select{appearance:none;-webkit-appearance:none}
+.gate-legal{font-size:.72rem;color:var(--text-3);margin-top:1.1rem;text-align:center}
+
+/* ===== APP SHELL ===== */
+#app{display:none;grid-template-columns:250px 1fr;min-height:100vh}
+#app.is-active{display:grid}
+.sidebar{background:#0A0F1C;color:#F4F2EC;padding:1.1rem .9rem;display:flex;flex-direction:column;gap:1rem;position:sticky;top:0;height:100vh;overflow-y:auto;
+  background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:22px 22px}
+.sb-brand{display:flex;align-items:center;gap:.55rem;font-weight:800;padding:.4rem;font-size:.98rem}
+.sb-brand .mark{width:28px;height:28px;border-radius:8px;background:var(--gold);display:flex;align-items:center;justify-content:center}
+.sb-brand .mark svg{width:15px;height:15px;stroke:var(--gold-ink)}
+.sb-brand em{font-style:normal;color:#E8C98F}
+.sb-group-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,242,236,.35);padding:.9rem .6rem .3rem}
+.sb-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .6rem;border-radius:9px;font-size:.82rem;font-weight:500;color:rgba(244,242,236,.64);text-align:left;width:100%}
+.sb-item svg{width:15px;height:15px;flex:none}
+.sb-item[aria-current="page"]{background:rgba(var(--gold-rgb),.14);color:#E8C98F}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
+
+.main{background:var(--canvas);min-width:0}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.9rem;padding:.8rem 1.4rem;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--canvas) 85%, transparent);backdrop-filter:blur(10px)}
+.gsearch{position:relative;flex:1;max-width:380px}
+.gsearch .iw{display:flex;align-items:center;gap:.55rem;border:1px solid var(--border-strong);border-radius:var(--radius-full);padding:.5rem .9rem;background:var(--surface)}
+.gsearch svg{width:15px;height:15px;color:var(--text-3)}
+.gsearch input{flex:1;font-size:.84rem}
+.gsearch-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);overflow:hidden;display:none;z-index:30}
+.gsearch-results.is-open{display:block}
+.gsearch-results button{display:flex;flex-direction:column;gap:.1rem;width:100%;text-align:left;padding:.6rem .9rem;border-bottom:1px solid var(--border)}
+.gsearch-results button:last-child{border-bottom:0}
+.gsearch-results button:hover{background:var(--surface-2)}
+.gsearch-results .r-main{font-size:.84rem;font-weight:600}
+.gsearch-results .r-meta{font-size:.72rem;color:var(--text-3)}
+.gsearch-empty{padding:.9rem;font-size:.8rem;color:var(--text-3);text-align:center}
+.topbar-spacer{flex:1}
+.topbar-actions{display:flex;align-items:center;gap:.5rem}
+.bell-wrap{position:relative}
+.bell-dot{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--danger);border:2px solid var(--canvas)}
+.dropdown{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);display:none;overflow:hidden;z-index:30}
+.dropdown.is-open{display:block}
+.dropdown-head{padding:.8rem .9rem;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:700}
+.dropdown-item{padding:.7rem .9rem;border-bottom:1px solid var(--border);font-size:.8rem}
+.dropdown-item:last-child{border-bottom:0}
+.dropdown-item .t{font-weight:600}
+.dropdown-item .d{color:var(--text-3);font-size:.72rem;margin-top:.15rem}
+.dropdown-link{display:block;padding:.7rem .9rem;font-size:.8rem;font-weight:600;color:var(--gold);text-align:left;width:100%}
+.dropdown-link:hover{background:var(--surface-2)}
+.user-chip{display:flex;align-items:center;gap:.5rem;padding:.3rem .55rem .3rem .3rem;border-radius:var(--radius-full);border:1px solid var(--border-strong)}
+.user-chip .av{width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+.user-chip .nm{font-size:.78rem;font-weight:600}
+.user-chip .rl{font-size:.66rem;color:var(--text-3)}
+
+.page{padding:clamp(1.2rem,3vw,2rem)}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.3rem}
+.page-head p{color:var(--text-2);font-size:.88rem;margin-top:.3rem}
+.readonly-tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-family:var(--font-mono);color:var(--warning);background:var(--warning-bg);padding:.3rem .65rem;border-radius:var(--radius-full)}
+
+.admin-tab{display:none}
+.admin-tab.is-active{display:block}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.9rem}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem}
+.kpi-card .ic{width:32px;height:32px;border-radius:9px;background:rgba(var(--gold-rgb),.14);display:flex;align-items:center;justify-content:center}
+.kpi-card svg{width:15px;height:15px;color:var(--gold)}
+.kpi-card .v{font-family:var(--font-mono);font-size:1.4rem;font-weight:700;margin-top:.7rem}
+.kpi-card .l{font-size:.74rem;color:var(--text-2);margin-top:.1rem}
+.kpi-card .d{font-size:.68rem;margin-top:.4rem;font-weight:600}
+.kpi-card .d.up{color:var(--success)}
+.kpi-card .d.down{color:var(--danger)}
+@media (max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.panel-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:1.1rem;margin-top:1.1rem}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.2rem}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.panel-head .sub{font-size:.76rem;color:var(--text-3)}
+@media (max-width:960px){.panel-grid{grid-template-columns:1fr}}
+
+.bar-chart{display:flex;align-items:flex-end;gap:.7rem;height:150px;margin-top:.5rem}
+.bar-chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.4rem;height:100%}
+.bar-chart .bar .fill{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold-strong),var(--gold));min-height:4px}
+.bar-chart .bar .lbl{font-size:.66rem;color:var(--text-3)}
+.bar-chart .bar .val{font-family:var(--font-mono);font-size:.68rem;color:var(--text-2)}
+
+.hbar-row{display:flex;align-items:center;gap:.7rem;margin-top:.8rem}
+.hbar-row .lbl{width:76px;font-size:.78rem;color:var(--text-2);flex:none}
+.hbar-row .track{flex:1;height:7px;background:var(--surface-3);border-radius:var(--radius-full);overflow:hidden}
+.hbar-row .fill{height:100%;border-radius:var(--radius-full);background:var(--gold)}
+.hbar-row .val{width:38px;text-align:right;font-family:var(--font-mono);font-size:.74rem;flex:none}
+
+.funnel-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.funnel-row:last-child{border-bottom:0}
+.funnel-row .l{font-size:.85rem}
+.funnel-row .r{font-family:var(--font-mono);font-weight:700}
+
+.activity-item{display:flex;gap:.6rem;padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.activity-item:last-child{border-bottom:0}
+.activity-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:.4rem;flex:none}
+.activity-item .t{font-size:.7rem;color:var(--text-3);margin-top:.1rem}
+
+.alert-row{display:flex;align-items:center;gap:.65rem;padding:.65rem;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.alert-row+.alert-row{margin-top:.55rem}
+.alert-row svg{width:15px;height:15px;color:var(--warning);flex:none}
+.alert-row span{font-size:.82rem;flex:1}
+.alert-row a{font-size:.76rem;font-weight:600;color:var(--gold)}
+
+/* ===== TABLE CARD ===== */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.tc-stats{display:flex;gap:1.6rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tc-stat .v{font-family:var(--font-mono);font-weight:700;font-size:1rem}
+.tc-stat .l{font-size:.7rem;color:var(--text-3)}
+.tc-head{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tc-head h3{flex:1;min-width:120px}
+.tc-search{display:flex;align-items:center;gap:.5rem;border:1px solid var(--border-strong);border-radius:var(--radius-full);padding:.42rem .8rem;background:var(--surface-2);min-width:180px}
+.tc-search svg{width:14px;height:14px;color:var(--text-3)}
+.tc-search input{flex:1;font-size:.8rem}
+.tc-wrap{overflow-x:auto}
+table.data{min-width:100%}
+table.data th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);font-weight:600;padding:.7rem 1.2rem;border-bottom:1px solid var(--border);white-space:nowrap}
+table.data td{padding:.75rem 1.2rem;border-bottom:1px solid var(--border);font-size:.84rem;white-space:nowrap}
+table.data tr:last-child td{border-bottom:0}
+table.data td.al-right,table.data th.al-right{text-align:right}
+table.data tbody tr:hover{background:var(--surface-2)}
+.row-actions{display:inline-flex;gap:.25rem}
+.tc-empty{padding:2rem;text-align:center;color:var(--text-3);font-size:.84rem}
+
+.subtabs{display:flex;gap:.4rem;margin-bottom:1rem}
+.subtab{padding:.5rem 1rem;border-radius:var(--radius-full);font-size:.8rem;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong)}
+.subtab[aria-selected="true"]{background:var(--gold);color:var(--gold-ink);border-color:transparent}
+
+/* ===== SETTINGS ===== */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.3rem}
+.settings-card+.settings-card{margin-top:1rem}
+.perm-table th,.perm-table td{text-align:center}
+.perm-table th:first-child,.perm-table td:first-child{text-align:left}
+.perm-table td svg{width:15px;height:15px;color:var(--success);margin-inline:auto}
+.perm-table td.no svg{color:var(--text-3);opacity:.35}
+
+.integ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.integ-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem}
+.integ-card .ic{width:34px;height:34px;border-radius:9px;background:var(--surface-3);display:flex;align-items:center;justify-content:center}
+.integ-card svg{width:16px;height:16px;color:var(--gold)}
+.integ-card h4{margin-top:.8rem;font-size:.9rem}
+.integ-card p{font-size:.76rem;color:var(--text-2);margin-top:.3rem}
+.integ-card .st{margin-top:.8rem}
+@media (max-width:900px){.integ-grid{grid-template-columns:1fr}}
+
+.toast{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%) translateY(20px);background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-1);padding:.75rem 1.1rem;border-radius:var(--radius-md);box-shadow:var(--shadow-2);font-size:.84rem;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:100;display:flex;align-items:center;gap:.5rem;max-width:90vw}
+.toast.is-shown{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:16px;height:16px;color:var(--gold);flex:none}
+
+
+
+/* Mobile sidebar drawer + responsive */
+.sb-overlay{
+  display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;
+  transition:opacity .25s ease;pointer-events:none
+}
+.sb-overlay.is-open{opacity:1;pointer-events:auto}
+.sb-toggle{display:none}
+
+@media (max-width:980px){
+  .sb-toggle{
+    display:inline-flex;width:34px;height:34px;border-radius:9px;
+    align-items:center;justify-content:center;flex:none;color:var(--text-2);
+    border:1px solid var(--border-strong);margin-right:.25rem
+  }
+  .sb-toggle:hover{background:var(--surface-3)}
+
+  #app.is-active{grid-template-columns:1fr}
+  .sidebar{
+    position:fixed;top:0;left:0;width:280px;height:100vh;z-index:50;
+    transform:translateX(-100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow:4px 0 40px rgba(0,0,0,.4)
+  }
+  .sidebar.is-open{transform:translateX(0)}
+  .sb-overlay.is-open{display:block}
+
+  .gsearch{max-width:none}
+  .page{padding:1rem}
+
+  .kpi-card{padding:.85rem}
+  .kpi-card .v{font-size:1.15rem}
+  @media (max-width:480px){.kpi-grid{grid-template-columns:1fr 1fr;gap:.6rem}}
+
+  .panel{padding:1rem}
+
+  .topbar{padding:.6rem .85rem;gap:.5rem}
+  .topbar-actions{gap:.35rem}
+  .user-chip .nm,.user-chip .rl{display:none!important}
+  .user-chip{padding:.25rem;border-radius:50%}
+
+  .gsearch .iw{padding:.35rem .65rem}
+
+  .subtabs{overflow-x:auto;gap:.3rem;padding-bottom:.3rem;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .subtab{flex:none;white-space:nowrap;font-size:.75rem;padding:.4rem .75rem}
+
+  .tc-head{flex-wrap:wrap}
+  .tc-head h3{min-width:auto;width:100%;font-size:.9rem}
+  .tc-search{min-width:0;flex:1}
+
+  .table-card{border-radius:var(--radius-sm)}
+  table.data td,table.data th{padding:.55rem .75rem;font-size:.8rem}
+  table.data th{font-size:.62rem}
+
+  .settings-card{padding:1rem}
+
+  .integ-grid{gap:.7rem}
+  .integ-card{padding:.85rem}
+
+  .gate-card{padding:1.5rem 1.2rem}
+  .gate-card h1{font-size:1.1rem}
+  .gate{padding:1rem}
+
+  .dropdown{width:260px;right:-8px}
+  .bell-dot{display:none}
+
+  .bar-chart{height:110px;gap:.4rem}
+  .bar-chart .bar .lbl{font-size:.6rem}
+  .hbar-row .lbl{width:60px;font-size:.72rem}
+  .hbar-row .val{width:30px;font-size:.68rem}
+
+  .alert-row{padding:.55rem;font-size:.78rem}
+  .activity-item{font-size:.78rem}
+  .page-head p{font-size:.82rem}
+  h2{font-size:1.15rem}
+}
+</style>
+</head>
+<body>
+
+<svg class="icon" style="position:absolute;width:0;height:0" aria-hidden="true">
+<defs>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.4 8-7 9-3.6-1-7-4-7-9V6l7-3z"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.4 2.9-5.5 6.5-5.5s6.5 2.1 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.5 14.3c2.9.3 5 2.2 5 5.2"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.3" y1="15.3" x2="20.5" y2="20.5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.4 5.5 2 6.3H4c.6-.8 2-2.3 2-6.3z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="3" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/><line x1="5.6" y1="18.4" x2="7.7" y2="16.3"/><line x1="16.3" y1="7.7" x2="18.4" y2="5.6"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"/><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"/><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><polyline points="14 3 14 7 18 7"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M3 12v5c0 1.7 2.7 3 6 3 1 0 2-.1 2.8-.4"/><ellipse cx="17" cy="14" rx="4" ry="2.2"/><path d="M13 14v3.5c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V14"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><polygon points="12 3 21 8 12 13 3 8 12 3"/><polyline points="3 13 12 18 21 13"/><polyline points="3 17.5 12 22.5 21 17.5"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><rect x="4" y="12" width="16" height="9" rx="1"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8C10 4 6 5 6 7.5S9 8 12 8zM12 8c2-4 6-3 6-.5S15 8 12 8z"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="5" y1="15" x2="9" y2="15"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11h18V9"/><path d="M9 20v-6h6v6"/><line x1="3" y1="9" x2="21" y2="9"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="7" y1="9.5" x2="17" y2="9.5"/><line x1="7" y1="13" x2="13" y2="13"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></symbol>
+<symbol id="i-bar-chart" viewBox="0 0 24 24"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="6"/><line x1="16" y1="20" x2="16" y2="14"/><line x1="21" y1="20" x2="21" y2="9"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M9 15l6-6"/><path d="M13 5.5l1.3-1.3a3.5 3.5 0 0 1 5 5L18 10.5"/><path d="M11 13.5l-1.3 1.3a3.5 3.5 0 0 1-5-5L6 8.5"/></symbol>
+<symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/><line x1="14" y1="7" x2="17" y2="10"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><polyline points="5 13 10 18 19 7"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 21 20 3 20z"/><line x1="12" y1="9" x2="12" y2="13.5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3c2.8 2.4 4.3 5.6 4.3 9s-1.5 6.6-4.3 9c-2.8-2.4-4.3-5.6-4.3-9S9.2 5.4 12 3z"/></symbol>
+</defs>
+</svg>
+
+<!-- ============ LOGIN GATE ============ -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>Wyn<em>Care</em></div>
+    <h1>Panel de Administración</h1>
+    <p class="sub">Acceso interno para el equipo de WynCare</p>
+    <form id="gateForm">
+      <div class="field"><label>Correo electrónico</label><div class="iw"><svg class="icon"><use href="#i-mail"/></svg><input id="gateEmail" type="email" placeholder="tu@wyncare.es" value="gabriel@wyncare.es"></div></div>
+      <div class="field"><label>Contraseña</label><div class="iw"><svg class="icon"><use href="#i-lock"/></svg><input id="gatePass" type="password" placeholder="••••••••"></div></div>
+      <div class="field"><label>Rol (demo)</label><div class="iw"><svg class="icon"><use href="#i-users"/></svg>
+        <select id="gateRole">
+          <option value="Admin">Admin — acceso total</option>
+          <option value="Soporte">Soporte — sin borrar/configurar</option>
+          <option value="Solo lectura">Solo lectura</option>
+        </select>
+      </div></div>
+      <button class="btn btn-primary" type="submit" style="width:100%;margin-top:1.3rem;padding-block:.8rem">Acceder al panel</button>
+    </form>
+    <p class="gate-legal">Vista de demostración. La autenticación real y los roles llegarán con Supabase.</p>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="mark" style="width:28px;height:28px;border-radius:8px;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" style="width:15px;height:15px;stroke:var(--gold-ink)"><use href="#i-shield"/></svg></span>Wyn<em>Care</em> <span style="font-size:.65rem;color:var(--text-3);font-weight:500;margin-left:auto">Admin</span></div>
+
+    <nav id="sbNav">
+      <div class="sb-group-label">General</div>
+      <button class="sb-item" data-tab="resumen"><svg class="icon"><use href="#i-grid"/></svg>Resumen</button>
+      <button class="sb-item" data-tab="analitica"><svg class="icon"><use href="#i-bar-chart"/></svg>Analítica</button>
+
+      <div class="sb-group-label">CRM</div>
+      <button class="sb-item" data-tab="usuarios"><svg class="icon"><use href="#i-users"/></svg>Usuarios</button>
+      <button class="sb-item" data-tab="clientes"><svg class="icon"><use href="#i-user"/></svg>Clientes</button>
+
+      <div class="sb-group-label">Negocio</div>
+      <button class="sb-item" data-tab="polizas"><svg class="icon"><use href="#i-shield"/></svg>Pólizas</button>
+      <button class="sb-item" data-tab="presupuestos"><svg class="icon"><use href="#i-file"/></svg>Presupuestos</button>
+      <button class="sb-item" data-tab="aseguradoras"><svg class="icon"><use href="#i-store"/></svg>Aseguradoras</button>
+
+      <div class="sb-group-label">Fidelización</div>
+      <button class="sb-item" data-tab="wynpoints"><svg class="icon"><use href="#i-coins"/></svg>WynPoints</button>
+      <button class="sb-item" data-tab="beneficios"><svg class="icon"><use href="#i-gift"/></svg>Beneficios</button>
+      <button class="sb-item" data-tab="comercios"><svg class="icon"><use href="#i-store"/></svg>Comercios</button>
+
+      <div class="sb-group-label">Salud y documentos</div>
+      <button class="sb-item" data-tab="telemedicina"><svg class="icon"><use href="#i-pulse"/></svg>Telemedicina</button>
+      <button class="sb-item" data-tab="documentos"><svg class="icon"><use href="#i-file"/></svg>Documentos</button>
+
+      <div class="sb-group-label">Comunicación</div>
+      <button class="sb-item" data-tab="mensajes"><svg class="icon"><use href="#i-chat"/></svg>Mensajes</button>
+      <button class="sb-item" data-tab="notificaciones"><svg class="icon"><use href="#i-bell"/></svg>Notificaciones</button>
+
+      <div class="sb-group-label">Sistema</div>
+      <button class="sb-item" data-tab="automatizaciones"><svg class="icon"><use href="#i-bolt"/></svg>Automatizaciones</button>
+      <button class="sb-item" data-tab="logs"><svg class="icon"><use href="#i-list"/></svg>Logs</button>
+      <button class="sb-item" data-tab="configuracion"><svg class="icon"><use href="#i-settings"/></svg>Configuración</button>
+    </nav>
+  </aside>
+  <div class="sb-overlay" id="sbOverlay"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="sb-toggle" type="button" id="sbToggle" aria-label="Abrir menú"><svg class="icon" style="width:17px;height:17px"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+      <div class="gsearch">
+        <div class="iw"><svg class="icon"><use href="#i-search"/></svg><input id="globalSearch" type="text" placeholder="Buscar cliente, póliza, referencia…"></div>
+        <div class="gsearch-results" id="gsearchResults"></div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" type="button" id="themeToggle" aria-label="Cambiar tema"><svg class="icon i-sun"><use href="#i-sun"/></svg><svg class="icon i-moon"><use href="#i-moon"/></svg></button>
+        <div class="bell-wrap">
+          <button class="btn-icon" type="button" id="bellBtn" aria-label="Notificaciones"><svg class="icon"><use href="#i-bell"/></svg></button>
+          <span class="bell-dot"></span>
+          <div class="dropdown" id="bellDropdown">
+            <div class="dropdown-head">Notificaciones</div>
+            <div class="dropdown-item"><div class="t">5 presupuestos nuevos sin contactar</div><div class="d">Hace 2 horas</div></div>
+            <div class="dropdown-item"><div class="t">3 documentos pendientes de verificar</div><div class="d">Hoy</div></div>
+            <div class="dropdown-item"><div class="t">Automatización "Informe semanal" pausada</div><div class="d">Hace 4 días</div></div>
+          </div>
+        </div>
+        <div style="position:relative">
+          <button class="user-chip" type="button" id="userBtn"><span class="av" id="userAvatar">G</span><span><span class="nm" id="userName" style="display:block">Gabriel Calvo</span><span class="rl" id="userRole">Admin</span></span></button>
+          <div class="dropdown" id="userDropdown" style="width:180px">
+            <button class="dropdown-link" id="logoutBtn"><svg class="icon" style="width:14px;height:14px;display:inline;margin-right:.4rem;vertical-align:-2px"><use href="#i-logout"/></svg>Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- RESUMEN -->
+      <div class="admin-tab is-active" id="tab-resumen">
+        <div class="page-head"><div><h2>Resumen</h2><p>Estado general de la plataforma WynCare</p></div></div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-users"/></svg></span><div class="v">1.248</div><div class="l">Clientes totales</div><div class="d up">+34 este mes</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-shield"/></svg></span><div class="v">892</div><div class="l">Pólizas activas</div><div class="d up">+58 este mes</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-coins"/></svg></span><div class="v">14.320€</div><div class="l">Comisión mensual est.</div><div class="d up">+8,4%</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-gift"/></svg></span><div class="v">2,1M</div><div class="l">WynPoints en circulación</div><div class="d">—</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-chat"/></svg></span><div class="v">3</div><div class="l">Tickets abiertos</div><div class="d down">Requiere atención</div></div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Nuevas pólizas (últimos 6 meses)</h3><span class="sub">Total periodo: 441</span></div>
+            <div class="bar-chart" id="chartPolizas"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Pólizas por tipo</h3></div>
+            <div id="hbarTipos"></div>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Alertas</h3></div>
+            <div class="alert-row"><svg class="icon"><use href="#i-alert"/></svg><span>5 presupuestos nuevos sin contactar</span><a href="#" data-goto="presupuestos">Ver →</a></div>
+            <div class="alert-row"><svg class="icon"><use href="#i-alert"/></svg><span>3 documentos pendientes de verificar</span><a href="#" data-goto="documentos">Ver →</a></div>
+            <div class="alert-row"><svg class="icon"><use href="#i-alert"/></svg><span>1 automatización pausada</span><a href="#" data-goto="automatizaciones">Ver →</a></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Actividad reciente</h3></div>
+            <div id="activityFeed"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALÍTICA -->
+      <div class="admin-tab" id="tab-analitica">
+        <div class="page-head"><div><h2>Analítica</h2><p>Conversión, adquisición y uso del programa de fidelización</p></div></div>
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Clientes nuevos por semana</h3></div>
+            <div class="bar-chart" id="chartClientes"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Conversión presupuesto → póliza</h3></div>
+            <div class="funnel-row"><span class="l">Presupuestos creados</span><span class="r">340</span></div>
+            <div class="funnel-row"><span class="l">Contactados</span><span class="r">210</span></div>
+            <div class="funnel-row"><span class="l">Convertidos a póliza</span><span class="r">96</span></div>
+            <div class="funnel-row"><span class="l" style="color:var(--gold);font-weight:600">Tasa de conversión</span><span class="r" style="color:var(--gold)">28%</span></div>
+          </div>
+        </div>
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Canje de WynPoints por categoría</h3></div>
+            <div id="hbarCanjes"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Distribución de clientes por nivel</h3></div>
+            <div id="hbarNiveles"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE-DRIVEN SECTIONS -->
+      <div class="admin-tab" id="tab-usuarios"><div id="mount-usuarios"></div></div>
+      <div class="admin-tab" id="tab-clientes"><div id="mount-clientes"></div></div>
+      <div class="admin-tab" id="tab-polizas"><div id="mount-polizas"></div></div>
+      <div class="admin-tab" id="tab-presupuestos"><div id="mount-presupuestos"></div></div>
+
+      <div class="admin-tab" id="tab-aseguradoras">
+        <div class="subtabs">
+          <button class="subtab" data-sub="aseguradoras" data-parent="aseguradoras" aria-selected="true">Aseguradoras</button>
+          <button class="subtab" data-sub="comisiones" data-parent="aseguradoras" aria-selected="false">Comisiones</button>
+        </div>
+        <div id="mount-aseguradoras"></div>
+        <div id="mount-comisiones" style="display:none"></div>
+      </div>
+
+      <div class="admin-tab" id="tab-wynpoints">
+        <div class="subtabs">
+          <button class="subtab" data-sub="wynpoints" data-parent="wynpoints" aria-selected="true">Movimientos</button>
+          <button class="subtab" data-sub="niveles" data-parent="wynpoints" aria-selected="false">Niveles</button>
+        </div>
+        <div id="mount-wynpoints"></div>
+        <div id="mount-niveles" style="display:none"></div>
+      </div>
+
+      <div class="admin-tab" id="tab-beneficios">
+        <div class="subtabs">
+          <button class="subtab" data-sub="beneficios" data-parent="beneficios" aria-selected="true">Beneficios</button>
+          <button class="subtab" data-sub="tarjetas" data-parent="beneficios" aria-selected="false">Tarjetas regalo</button>
+        </div>
+        <div id="mount-beneficios"></div>
+        <div id="mount-tarjetas" style="display:none"></div>
+      </div>
+
+      <div class="admin-tab" id="tab-comercios"><div id="mount-comercios"></div></div>
+      <div class="admin-tab" id="tab-telemedicina"><div id="mount-telemedicina"></div></div>
+      <div class="admin-tab" id="tab-documentos"><div id="mount-documentos"></div></div>
+      <div class="admin-tab" id="tab-mensajes"><div id="mount-mensajes"></div></div>
+      <div class="admin-tab" id="tab-notificaciones"><div id="mount-notificaciones"></div></div>
+      <div class="admin-tab" id="tab-automatizaciones"><div id="mount-automatizaciones"></div></div>
+      <div class="admin-tab" id="tab-logs"><div id="mount-logs"></div></div>
+
+      <!-- CONFIGURACIÓN -->
+      <div class="admin-tab" id="tab-configuracion">
+        <div class="page-head"><div><h2>Configuración</h2><p>Ajustes de la plataforma, roles e integraciones</p></div></div>
+        <div class="subtabs">
+          <button class="subtab" data-sub="general" data-parent="config" aria-selected="true">General</button>
+          <button class="subtab" data-sub="roles" data-parent="config" aria-selected="false">Roles y permisos</button>
+          <button class="subtab" data-sub="integraciones" data-parent="config" aria-selected="false">Integraciones</button>
+        </div>
+
+        <div id="config-general">
+          <div class="settings-card">
+            <h3 style="margin-bottom:1rem">General</h3>
+            <div class="field" style="margin-top:0"><label>Nombre de la plataforma</label><div class="iw"><input type="text" value="WynCare"></div></div>
+            <div class="field"><label>Dominio</label><div class="iw"><input type="text" value="wyncare.es"></div></div>
+            <div class="field"><label>Email de soporte</label><div class="iw"><input type="email" value="contacto@wyncare.es"></div></div>
+            <div class="field"><label>Zona horaria</label><div class="iw"><input type="text" value="Europe/Madrid"></div></div>
+            <button class="btn btn-primary" id="saveGeneralBtn" style="margin-top:1.2rem">Guardar cambios</button>
+          </div>
+        </div>
+
+        <div id="config-roles" style="display:none">
+          <div class="settings-card">
+            <h3 style="margin-bottom:1rem">Roles y permisos</h3>
+            <div class="tc-wrap">
+              <table class="data perm-table">
+                <thead><tr><th>Rol</th><th>Ver</th><th>Crear</th><th>Editar</th><th>Eliminar</th><th>Configuración</th></tr></thead>
+                <tbody>
+                  <tr><td>Admin</td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                  <tr><td>Soporte</td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                  <tr><td>Editor</td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                  <tr><td>Solo lectura</td><td><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p style="font-size:.78rem;color:var(--text-3);margin-top:1rem">La aplicación real de estos permisos llegará con las políticas de Row Level Security de Supabase.</p>
+          </div>
+        </div>
+
+        <div id="config-integraciones" style="display:none">
+          <div class="integ-grid">
+            <div class="integ-card">
+              <span class="ic"><svg class="icon"><use href="#i-database"/></svg></span>
+              <h4>Supabase</h4>
+              <p>Base de datos, autenticación y almacenamiento.</p>
+              <div class="st"><span class="badge tone-neutral" id="supabaseStatus">No conectado</span></div>
+              <button class="btn btn-quiet" style="margin-top:.9rem" data-integ="Supabase">Conectar</button>
+            </div>
+            <div class="integ-card">
+              <span class="ic"><svg class="icon"><use href="#i-link"/></svg></span>
+              <h4>n8n</h4>
+              <p>Automatizaciones y flujos de trabajo.</p>
+              <div class="st"><span class="badge tone-neutral">No conectado</span></div>
+              <button class="btn btn-quiet" style="margin-top:.9rem" data-integ="n8n">Conectar</button>
+            </div>
+            <div class="integ-card">
+              <span class="ic"><svg class="icon"><use href="#i-chat"/></svg></span>
+              <h4>Teddy (IA)</h4>
+              <p>Asistente del Área Cliente, vía API de Claude.</p>
+              <div class="st"><span class="badge tone-success">Conectado</span></div>
+              <button class="btn btn-quiet" style="margin-top:.9rem" disabled>Configurado</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg class="icon"><use href="#i-alert"/></svg><span id="toastMsg"></span></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- TEMA ---------- */
+var root = document.documentElement;
+function setTheme(mode){ root.setAttribute('data-theme', mode); }
+document.getElementById('themeToggle').addEventListener('click', function(){
+  setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+try{
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) setTheme('light');
+}catch(e){}
+
+/* ---------- TOAST ---------- */
+var toastEl = document.getElementById('toast');
+var toastMsg = document.getElementById('toastMsg');
+var toastTimer = null;
+function showToast(msg){
+  toastMsg.textContent = msg;
+  toastEl.classList.add('is-shown');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('is-shown'); }, 3200);
+}
+
+/* ---------- LOGIN GATE ---------- */
+var currentRole = 'Admin';
+document.getElementById('gateForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var email = document.getElementById('gateEmail').value || 'gabriel@wyncare.es';
+  currentRole = document.getElementById('gateRole').value;
+  var name = email.split('@')[0].replace(/[._-]+/g,' ');
+  name = name.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('userRole').textContent = currentRole;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').classList.add('is-active');
+  document.body.classList.toggle('is-readonly', currentRole === 'Solo lectura');
+  applyRoleRestrictions();
+});
+document.getElementById('logoutBtn').addEventListener('click', function(){
+  document.getElementById('app').classList.remove('is-active');
+  document.getElementById('gate').style.display = 'flex';
+});
+
+function applyRoleRestrictions(){
+  var restrictWrite = currentRole !== 'Admin';
+  var restrictDelete = currentRole === 'Solo lectura';
+  document.querySelectorAll('[data-role-write]').forEach(function(el){ el.disabled = restrictWrite && currentRole === 'Solo lectura' ? true : el.disabled; });
+}
+
+/* ---------- DROPDOWNS ---------- */
+function setupDropdown(btnId, dropId){
+  var btn = document.getElementById(btnId), drop = document.getElementById(dropId);
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var open = drop.classList.contains('is-open');
+    document.querySelectorAll('.dropdown.is-open').forEach(function(d){ d.classList.remove('is-open'); });
+    if (!open) drop.classList.add('is-open');
+  });
+}
+setupDropdown('bellBtn', 'bellDropdown');
+setupDropdown('userBtn', 'userDropdown');
+document.addEventListener('click', function(){ document.querySelectorAll('.dropdown.is-open').forEach(function(d){ d.classList.remove('is-open'); }); });
+
+/* ---------- ROUTER (sidebar tabs) ---------- */
+function switchTab(tab){
+  document.querySelectorAll('.sb-item[data-tab]').forEach(function(item){
+    if (item.dataset.tab === tab) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('.admin-tab').forEach(function(p){ p.classList.remove('is-active'); });
+  var panel = document.getElementById('tab-' + tab);
+  if (panel) panel.classList.add('is-active');
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.sb-item[data-tab]').forEach(function(item){
+  item.addEventListener('click', function(){ switchTab(item.dataset.tab); });
+});
+document.querySelectorAll('[data-goto]').forEach(function(a){
+  a.addEventListener('click', function(e){ e.preventDefault(); switchTab(a.dataset.goto); });
+});
+
+/* ---------- SUBTABS ---------- */
+document.querySelectorAll('.subtab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var parent = btn.dataset.parent, sub = btn.dataset.sub;
+    document.querySelectorAll('.subtab[data-parent="'+parent+'"]').forEach(function(b){ b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+    if (parent === 'config'){
+      ['general','roles','integraciones'].forEach(function(k){ document.getElementById('config-'+k).style.display = (k===sub) ? '' : 'none'; });
+    } else {
+      document.querySelectorAll('.subtab[data-parent="'+parent+'"]').forEach(function(b){
+        var mount = document.getElementById('mount-' + b.dataset.sub);
+        if (mount) mount.style.display = (b === btn) ? '' : 'none';
+      });
+    }
+  });
+});
+
+/* ---------- BADGE TONES ---------- */
+var TONE_MAP = {
+  'Activo':'success','Activa':'success','Verificado':'success','Convertido':'success','Resuelto':'success','Sí':'success','Liquidada':'success',
+  'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Contactado':'warning',
+  'Cancelada':'danger','Descartado':'danger','Inactivo':'danger','De baja':'danger','No':'danger',
+  'Pausado':'neutral',
+  'Admin':'gold','Oro':'gold','Platino':'gold'
+};
+function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class="badge tone-'+tone+'">'+v+'</span>'; }
+
+/* ---------- GENERIC TABLE RENDERER ---------- */
+function mountTable(containerId, cfg){
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var uid = containerId;
+  var statsHtml = (cfg.stats || []).map(function(s){ return '<div class="tc-stat"><div class="v">'+s[0]+'</div><div class="l">'+s[1]+'</div></div>'; }).join('');
+  var html = '<div class="table-card">';
+  if (statsHtml) html += '<div class="tc-stats">'+statsHtml+'</div>';
+  html += '<div class="tc-head"><h3>'+cfg.title+'</h3>';
+  html += '<div class="tc-search"><svg class="icon"><use href="#i-search"/></svg><input type="text" placeholder="Buscar…" data-search="'+uid+'"></div>';
+  html += '<button class="btn btn-primary" data-add="'+uid+'"><svg class="icon"><use href="#i-plus"/></svg>'+(cfg.addLabel||'Nuevo')+'</button>';
+  html += '</div><div class="tc-wrap"><table class="data" id="'+uid+'-table"><thead><tr>';
+  cfg.columns.forEach(function(c){ html += '<th'+(c.align==='right'?' class="al-right"':'')+'>'+c.label+'</th>'; });
+  html += '<th class="al-right">Acciones</th></tr></thead><tbody id="'+uid+'-tbody"></tbody></table></div>';
+  html += '<div class="tc-empty" id="'+uid+'-empty" style="display:none">Sin resultados para tu búsqueda.</div>';
+  html += '</div>';
+  el.innerHTML = html;
+
+  function renderRows(filter){
+    var tbody = document.getElementById(uid+'-tbody');
+    var q = (filter||'').toLowerCase();
+    var rows = cfg.rows.filter(function(r){
+      if (!q) return true;
+      return cfg.columns.some(function(c){ return String(r[c.key]||'').toLowerCase().indexOf(q) > -1; });
+    });
+    tbody.innerHTML = rows.map(function(r){
+      var tds = cfg.columns.map(function(c){
+        var val = r[c.key];
+        var content = c.badge ? badgeHtml(val) : (c.mono ? '<span class="mono">'+val+'</span>' : val);
+        return '<td'+(c.align==='right'?' class="al-right"':'')+'>'+content+'</td>';
+      }).join('');
+      tds += '<td class="al-right"><span class="row-actions"><button class="btn-icon" data-row-edit><svg class="icon"><use href="#i-pencil"/></svg></button><button class="btn-icon" data-row-del><svg class="icon"><use href="#i-trash"/></svg></button></span></td>';
+      return '<tr>'+tds+'</tr>';
+    }).join('');
+    document.getElementById(uid+'-empty').style.display = rows.length ? 'none' : 'block';
+  }
+  renderRows('');
+  el.querySelector('[data-search="'+uid+'"]').addEventListener('input', function(e){ renderRows(e.target.value); });
+  el.querySelector('[data-add="'+uid+'"]').addEventListener('click', function(){ showToast('Esta acción se activará al conectar Supabase.'); });
+  el.addEventListener('click', function(e){
+    if (e.target.closest('[data-row-edit]') || e.target.closest('[data-row-del]')) showToast('Esta acción se activará al conectar Supabase.');
+  });
+}
+
+/* ---------- DATA ---------- */
+var D = {
+  usuarios:{
+    title:'Usuarios', addLabel:'Nuevo usuario',
+    stats:[['5','usuarios totales'],['4','activos'],['2','administradores']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'email',label:'Email',mono:true},{key:'rol',label:'Rol',badge:true},{key:'estado',label:'Estado',badge:true},{key:'acceso',label:'Último acceso',align:'right'}],
+    rows:[
+      {nombre:'Gabriel Calvo',email:'gabriel@wyncare.es',rol:'Admin',estado:'Activo',acceso:'Ahora'},
+      {nombre:'Laura Martín',email:'laura@wyncare.es',rol:'Admin',estado:'Activo',acceso:'Hace 2h'},
+      {nombre:'Marc Puig',email:'marc@wyncare.es',rol:'Soporte',estado:'Activo',acceso:'Hace 1 día'},
+      {nombre:'Iria Souto',email:'iria@wyncare.es',rol:'Editor',estado:'Activo',acceso:'Hace 3 días'},
+      {nombre:'David Ruiz',email:'david@wyncare.es',rol:'Soporte',estado:'Inactivo',acceso:'Hace 21 días'}
+    ]
+  },
+  clientes:{
+    title:'Clientes', addLabel:'Nuevo cliente',
+    stats:[['1.248','clientes totales'],['82%','con póliza activa'],['+34','este mes']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'email',label:'Email',mono:true},{key:'nivel',label:'Nivel',badge:true},{key:'seguros',label:'Seguros'},{key:'pts',label:'WynPoints',align:'right'},{key:'alta',label:'Alta',align:'right'}],
+    rows:[
+      {nombre:'Ana García',email:'ana@ejemplo.com',nivel:'Plata',seguros:'4',pts:'4.850',alta:'12/03/2024'},
+      {nombre:'Marc Rovira',email:'marc.r@ejemplo.com',nivel:'Bronce',seguros:'1',pts:'320',alta:'04/01/2025'},
+      {nombre:'Laia Ferrer',email:'laia@ejemplo.com',nivel:'Oro',seguros:'5',pts:'7.100',alta:'22/08/2023'},
+      {nombre:'Jordi Camps',email:'jordi@ejemplo.com',nivel:'Bronce',seguros:'2',pts:'900',alta:'30/05/2025'},
+      {nombre:'Núria Soler',email:'nuria@ejemplo.com',nivel:'Platino',seguros:'6',pts:'13.400',alta:'14/11/2022'},
+      {nombre:'Pol Vidal',email:'pol@ejemplo.com',nivel:'Plata',seguros:'3',pts:'3.200',alta:'09/02/2025'}
+    ]
+  },
+  polizas:{
+    title:'Pólizas', addLabel:'Nueva póliza',
+    stats:[['892','pólizas activas'],['441','nuevas (6 meses)'],['12','pendientes']],
+    columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'aseguradora',label:'Aseguradora'},{key:'prima',label:'Prima',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'renovacion',label:'Renovación',align:'right'}],
+    rows:[
+      {ref:'WC-2024-001',cliente:'Ana García',tipo:'Coche',aseguradora:'AXA',prima:'35€',estado:'Activa',renovacion:'12/03/2027'},
+      {ref:'WC-2024-002',cliente:'Ana García',tipo:'Hogar',aseguradora:'Mapfre',prima:'22€',estado:'Activa',renovacion:'12/03/2027'},
+      {ref:'WC-2024-003',cliente:'Ana García',tipo:'Salud',aseguradora:'Sanitas',prima:'52€',estado:'Activa',renovacion:'12/03/2027'},
+      {ref:'WC-2024-004',cliente:'Ana García',tipo:'Vida',aseguradora:'Allianz',prima:'18€',estado:'Pendiente',renovacion:'—'},
+      {ref:'WC-2025-011',cliente:'Laia Ferrer',tipo:'Empresa',aseguradora:'Generali',prima:'80€',estado:'Activa',renovacion:'22/08/2026'},
+      {ref:'WC-2025-014',cliente:'Jordi Camps',tipo:'Coche',aseguradora:'AXA',prima:'38€',estado:'Cancelada',renovacion:'—'}
+    ]
+  },
+  presupuestos:{
+    title:'Presupuestos', addLabel:'Nuevo presupuesto',
+    stats:[['340','creados'],['210','contactados'],['28%','conversión']],
+    columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente / contacto'},{key:'tipo',label:'Tipo'},{key:'precio',label:'Precio est.',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    rows:[
+      {ref:'PR-88231',cliente:'Pol Vidal',tipo:'Hogar',precio:'24€',estado:'Nuevo',fecha:'Hoy'},
+      {ref:'PR-88230',cliente:'marina@mail.com',tipo:'Salud',precio:'47€',estado:'Nuevo',fecha:'Hoy'},
+      {ref:'PR-88225',cliente:'Jordi Camps',tipo:'Vida',precio:'15€',estado:'Contactado',fecha:'Ayer'},
+      {ref:'PR-88219',cliente:'toni@mail.com',tipo:'Coche',precio:'33€',estado:'Convertido',fecha:'Hace 3 días'},
+      {ref:'PR-88201',cliente:'Núria Soler',tipo:'Empresa',precio:'95€',estado:'Descartado',fecha:'Hace 5 días'},
+      {ref:'PR-88190',cliente:'elena@mail.com',tipo:'Telemedicina',precio:'9€',estado:'Convertido',fecha:'Hace 1 semana'}
+    ]
+  },
+  aseguradoras:{
+    title:'Aseguradoras', addLabel:'Nueva aseguradora',
+    stats:[['5','aseguradoras aliadas'],['1.034','pólizas repartidas'],['12,2%','comisión media']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'ramos',label:'Ramos'},{key:'polizas',label:'Pólizas activas',align:'right'},{key:'comision',label:'Comisión',align:'right'},{key:'contacto',label:'Contacto',mono:true}],
+    rows:[
+      {nombre:'AXA',ramos:'Coche / Vida',polizas:'412',comision:'12%',contacto:'comercial@axa.es'},
+      {nombre:'Mapfre',ramos:'Hogar',polizas:'298',comision:'10%',contacto:'partners@mapfre.es'},
+      {nombre:'Sanitas',ramos:'Salud',polizas:'187',comision:'15%',contacto:'corredores@sanitas.es'},
+      {nombre:'Allianz',ramos:'Vida / Empresa',polizas:'96',comision:'11%',contacto:'broker@allianz.es'},
+      {nombre:'Generali',ramos:'Empresa',polizas:'41',comision:'13%',contacto:'canal@generali.es'}
+    ]
+  },
+  comisiones:{
+    title:'Comisiones', addLabel:'Registrar liquidación',
+    stats:[['3.510€','comisión del mes'],['2','liquidadas'],['3','pendientes']],
+    columns:[{key:'aseguradora',label:'Aseguradora'},{key:'mes',label:'Mes'},{key:'nuevas',label:'Pólizas nuevas',align:'right'},{key:'comision',label:'Comisión',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {aseguradora:'AXA',mes:'Junio 2026',nuevas:'18',comision:'1.240€',estado:'Liquidada'},
+      {aseguradora:'Mapfre',mes:'Junio 2026',nuevas:'11',comision:'780€',estado:'Liquidada'},
+      {aseguradora:'Sanitas',mes:'Junio 2026',nuevas:'9',comision:'960€',estado:'Pendiente'},
+      {aseguradora:'Allianz',mes:'Junio 2026',nuevas:'4',comision:'310€',estado:'Pendiente'},
+      {aseguradora:'Generali',mes:'Junio 2026',nuevas:'2',comision:'220€',estado:'Pendiente'}
+    ]
+  },
+  wynpoints:{
+    title:'Movimientos de WynPoints', addLabel:'Ajuste manual',
+    stats:[['2,1M','pts en circulación'],['+18.400','emitidos este mes'],['-6.200','canjeados este mes']],
+    columns:[{key:'cliente',label:'Cliente'},{key:'motivo',label:'Motivo'},{key:'pts',label:'Puntos',align:'right'},{key:'fecha',label:'Fecha',align:'right'}],
+    rows:[
+      {cliente:'Ana García',motivo:'Alta seguro Vida',pts:'+2.500',fecha:'12/03/2024'},
+      {cliente:'Núria Soler',motivo:'Renovación Hogar',pts:'+600',fecha:'10/07/2026'},
+      {cliente:'Laia Ferrer',motivo:'Canje tarjeta regalo',pts:'-800',fecha:'08/07/2026'},
+      {cliente:'Marc Rovira',motivo:'Alta seguro Coche',pts:'+700',fecha:'04/01/2025'},
+      {cliente:'Pol Vidal',motivo:'Bono de bienvenida',pts:'+200',fecha:'09/02/2025'},
+      {cliente:'Jordi Camps',motivo:'Canje gimnasio',pts:'-1.200',fecha:'01/07/2026'}
+    ]
+  },
+  niveles:{
+    title:'Niveles', addLabel:'Nuevo nivel',
+    stats:[['4','niveles activos']],
+    columns:[{key:'nivel',label:'Nivel',badge:true},{key:'umbral',label:'Umbral',align:'right'},{key:'beneficio',label:'Beneficio principal'}],
+    rows:[
+      {nivel:'Bronce',umbral:'0 pts',beneficio:'Acceso a recompensas básicas'},
+      {nivel:'Plata',umbral:'3.000 pts',beneficio:'Telemedicina con 20% dto.'},
+      {nivel:'Oro',umbral:'6.000 pts',beneficio:'Telemedicina incluida'},
+      {nivel:'Platino',umbral:'12.000 pts',beneficio:'Asesor personal + regalo anual'}
+    ]
+  },
+  beneficios:{
+    title:'Beneficios', addLabel:'Nuevo beneficio',
+    stats:[['6','activos'],['140','canjes este mes']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'categoria',label:'Categoría'},{key:'coste',label:'Coste',align:'right'},{key:'canjes',label:'Canjes/mes',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Tarjeta Amazon 10€',categoria:'Regalo',coste:'800 pts',canjes:'34',estado:'Activo'},
+      {nombre:'5€ en gasolina',categoria:'Movilidad',coste:'400 pts',canjes:'51',estado:'Activo'},
+      {nombre:'Mes de gimnasio',categoria:'Bienestar',coste:'1.200 pts',canjes:'12',estado:'Activo'},
+      {nombre:'2 entradas de cine',categoria:'Ocio',coste:'600 pts',canjes:'22',estado:'Activo'},
+      {nombre:'Revisión dental gratis',categoria:'Salud',coste:'1.500 pts',canjes:'6',estado:'Pausado'},
+      {nombre:'Descuento óptica 20%',categoria:'Salud',coste:'500 pts',canjes:'15',estado:'Activo'}
+    ]
+  },
+  tarjetas:{
+    title:'Tarjetas regalo', addLabel:'Nueva tarjeta',
+    stats:[['322','en stock']],
+    columns:[{key:'proveedor',label:'Proveedor'},{key:'valor',label:'Valor',align:'right'},{key:'stock',label:'Stock',align:'right'},{key:'coste',label:'Coste',align:'right'}],
+    rows:[
+      {proveedor:'Amazon',valor:'10€',stock:'128',coste:'800 pts'},
+      {proveedor:'El Corte Inglés',valor:'15€',stock:'64',coste:'1.100 pts'},
+      {proveedor:'Decathlon',valor:'10€',stock:'90',coste:'800 pts'},
+      {proveedor:'Zara',valor:'20€',stock:'40',coste:'1.500 pts'}
+    ]
+  },
+  comercios:{
+    title:'Comercios colaboradores', addLabel:'Nuevo comercio',
+    stats:[['6','comercios'],['5','activos']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'categoria',label:'Categoría'},{key:'descuento',label:'Descuento'},{key:'ciudad',label:'Ciudad'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Repsol',categoria:'Gasolinera',descuento:'5%',ciudad:'Nacional',estado:'Activo'},
+      {nombre:'Basic-Fit',categoria:'Gimnasio',descuento:'1 mes gratis',ciudad:'Nacional',estado:'Activo'},
+      {nombre:'Cinesa',categoria:'Cine',descuento:'2x1',ciudad:'Nacional',estado:'Activo'},
+      {nombre:'Óptica Universitaria',categoria:'Óptica',descuento:'20%',ciudad:'Barcelona',estado:'Activo'},
+      {nombre:'Clínica Dental Sonrisa',categoria:'Dental',descuento:'Revisión gratis',ciudad:'Madrid',estado:'Activo'},
+      {nombre:'Peluquería Nômade',categoria:'Barbería',descuento:'15%',ciudad:'Valencia',estado:'Pendiente'}
+    ]
+  },
+  telemedicina:{
+    title:'Especialistas', addLabel:'Nuevo especialista',
+    stats:[['5','especialistas'],['569','consultas/mes']],
+    columns:[{key:'nombre',label:'Especialista'},{key:'especialidad',label:'Especialidad'},{key:'consultas',label:'Consultas/mes',align:'right'},{key:'valoracion',label:'Valoración',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Dra. Elena Martínez',especialidad:'Medicina general',consultas:'214',valoracion:'4.9',estado:'Activo'},
+      {nombre:'Dr. Carlos Núñez',especialidad:'Pediatría',consultas:'98',valoracion:'4.8',estado:'Activo'},
+      {nombre:'Dra. Sara Puig',especialidad:'Psicología',consultas:'156',valoracion:'4.9',estado:'Activo'},
+      {nombre:'Dr. Iván Rodrigo',especialidad:'Nutrición',consultas:'61',valoracion:'4.7',estado:'Activo'},
+      {nombre:'Dra. Marta Ibáñez',especialidad:'Dermatología',consultas:'40',valoracion:'4.6',estado:'De baja'}
+    ]
+  },
+  documentos:{
+    title:'Documentos', addLabel:'Subir documento',
+    stats:[['4','verificados'],['2','pendientes']],
+    columns:[{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'poliza',label:'Póliza',mono:true},{key:'subido',label:'Subido',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {cliente:'Ana García',tipo:'DNI',poliza:'WC-2024-003',subido:'10/03/2024',estado:'Verificado'},
+      {cliente:'Ana García',tipo:'Padrón',poliza:'WC-2024-002',subido:'10/03/2024',estado:'Verificado'},
+      {cliente:'Núria Soler',tipo:'DNI',poliza:'WC-2025-011',subido:'20/08/2023',estado:'Verificado'},
+      {cliente:'Jordi Camps',tipo:'DNI',poliza:'WC-2025-014',subido:'29/05/2025',estado:'Pendiente'},
+      {cliente:'Pol Vidal',tipo:'Certificado médico',poliza:'PR-88231',subido:'Hoy',estado:'Pendiente'},
+      {cliente:'Laia Ferrer',tipo:'Escritura vivienda',poliza:'WC-2025-011',subido:'21/08/2023',estado:'Verificado'}
+    ]
+  },
+  mensajes:{
+    title:'Mensajes', addLabel:'Nueva conversación',
+    stats:[['3','abiertos'],['1','en proceso'],['2','resueltos']],
+    columns:[{key:'de',label:'De'},{key:'asunto',label:'Asunto'},{key:'canal',label:'Canal'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    rows:[
+      {de:'Ana García',asunto:'Duda sobre cobertura de hogar',canal:'Teddy → Escalado',estado:'Nuevo',fecha:'Hace 1h'},
+      {de:'Pol Vidal',asunto:'Quiero cambiar de plan',canal:'Chat web',estado:'Nuevo',fecha:'Hace 3h'},
+      {de:'Jordi Camps',asunto:'Cancelación de póliza',canal:'Email',estado:'En proceso',fecha:'Hace 1 día'},
+      {de:'Núria Soler',asunto:'Consulta factura',canal:'Chat web',estado:'Resuelto',fecha:'Hace 2 días'},
+      {de:'marina@mail.com',asunto:'Pregunta sobre WynPoints',canal:'Teddy → Escalado',estado:'Nuevo',fecha:'Hace 4h'},
+      {de:'Laia Ferrer',asunto:'Renovación anticipada',canal:'Email',estado:'Resuelto',fecha:'Hace 4 días'}
+    ]
+  },
+  notificaciones:{
+    title:'Plantillas de notificación', addLabel:'Nueva plantilla',
+    stats:[['4','activas'],['1','desactivada']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'canal',label:'Canal'},{key:'disparador',label:'Disparador'},{key:'activa',label:'Activa',badge:true}],
+    rows:[
+      {nombre:'Bienvenida nuevo cliente',canal:'Email',disparador:'Alta de cuenta',activa:'Sí'},
+      {nombre:'Póliza activada',canal:'Email + Push',disparador:'Activación de póliza',activa:'Sí'},
+      {nombre:'Recordatorio renovación',canal:'Email',disparador:'15 días antes de vencer',activa:'Sí'},
+      {nombre:'Nivel WynPoints alcanzado',canal:'Push',disparador:'Cambio de nivel',activa:'Sí'},
+      {nombre:'Presupuesto sin contactar 48h',canal:'Interno (Slack)',disparador:'Presupuesto nuevo',activa:'No'}
+    ]
+  },
+  automatizaciones:{
+    title:'Automatizaciones (n8n)', addLabel:'Nuevo flujo',
+    stats:[['5','activos'],['1','pausado']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'disparador',label:'Disparador'},{key:'ultima',label:'Última ejecución'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Alta de póliza → Asignar WynPoints',disparador:'Webhook Supabase',ultima:'Hace 12 min',estado:'Activo'},
+      {nombre:'Recordatorio de renovación',disparador:'Cron diario 08:00',ultima:'Hoy 08:00',estado:'Activo'},
+      {nombre:'Escalado Teddy → Soporte',disparador:'Webhook chat',ultima:'Hace 3h',estado:'Activo'},
+      {nombre:'Sincronización aseguradoras',disparador:'Cron cada 6h',ultima:'Hace 2h',estado:'Activo'},
+      {nombre:'Backup de documentos',disparador:'Cron diario 03:00',ultima:'Hoy 03:00',estado:'Activo'},
+      {nombre:'Informe semanal a founders',disparador:'Cron lunes 09:00',ultima:'Hace 4 días',estado:'Pausado'}
+    ]
+  },
+  logs:{
+    title:'Logs del sistema', addLabel:'Exportar',
+    stats:[['6','últimos eventos']],
+    columns:[{key:'ts',label:'Fecha / hora'},{key:'actor',label:'Actor'},{key:'accion',label:'Acción'},{key:'detalle',label:'Detalle',mono:true}],
+    rows:[
+      {ts:'Hoy 11:42',actor:'Gabriel Calvo',accion:'Inicio de sesión',detalle:'IP 84.120.x.x'},
+      {ts:'Hoy 11:15',actor:'Sistema',accion:'Póliza activada',detalle:'WC-2025-011'},
+      {ts:'Hoy 09:03',actor:'Laura Martín',accion:'Editó beneficio',detalle:'Mes de gimnasio'},
+      {ts:'Ayer 22:10',actor:'Automatización',accion:'Backup de documentos',detalle:'OK'},
+      {ts:'Ayer 18:44',actor:'Marc Puig',accion:'Respondió mensaje',detalle:'Jordi Camps'},
+      {ts:'Ayer 08:00',actor:'Automatización',accion:'Recordatorio renovación',detalle:'14 enviados'}
+    ]
+  }
+};
+
+Object.keys(D).forEach(function(key){
+  var mountId = 'mount-' + key;
+  if (document.getElementById(mountId)) mountTable(mountId, D[key]);
+});
+
+/* ---------- CHARTS ---------- */
+function renderBarChart(elId, data){
+  var el = document.getElementById(elId);
+  var max = Math.max.apply(null, data.map(function(d){ return d.v; }));
+  el.innerHTML = data.map(function(d){
+    var pct = Math.max(6, Math.round((d.v/max)*100));
+    return '<div class="bar"><div class="val">'+d.v+'</div><div class="fill" style="height:'+pct+'%"></div><div class="lbl">'+d.l+'</div></div>';
+  }).join('');
+}
+renderBarChart('chartPolizas', [{l:'Feb',v:58},{l:'Mar',v:64},{l:'Abr',v:71},{l:'May',v:80},{l:'Jun',v:76},{l:'Jul',v:92}]);
+renderBarChart('chartClientes', [{l:'S1',v:22},{l:'S2',v:19},{l:'S3',v:27},{l:'S4',v:31},{l:'S5',v:24},{l:'S6',v:35}]);
+
+function renderHBars(elId, data){
+  var el = document.getElementById(elId);
+  var max = Math.max.apply(null, data.map(function(d){ return d.v; }));
+  el.innerHTML = data.map(function(d){
+    var pct = Math.round((d.v/max)*100);
+    return '<div class="hbar-row"><span class="lbl">'+d.l+'</span><div class="track"><div class="fill" style="width:'+pct+'%"></div></div><span class="val">'+d.v+'%</span></div>';
+  }).join('');
+}
+renderHBars('hbarTipos', [{l:'Coche',v:34},{l:'Hogar',v:26},{l:'Salud',v:21},{l:'Vida',v:12},{l:'Empresa',v:7}]);
+renderHBars('hbarCanjes', [{l:'Regalo',v:38},{l:'Movilidad',v:27},{l:'Bienestar',v:19},{l:'Ocio',v:11},{l:'Salud',v:5}]);
+renderHBars('hbarNiveles', [{l:'Bronce',v:46},{l:'Plata',v:31},{l:'Oro',v:16},{l:'Platino',v:7}]);
+
+/* ---------- ACTIVITY FEED ---------- */
+document.getElementById('activityFeed').innerHTML = D.logs.rows.slice(0,4).map(function(r){
+  return '<div class="activity-item"><span class="activity-dot"></span><div><div>'+r.actor+' — '+r.accion+' <span class="mono" style="color:var(--text-3)">'+r.detalle+'</span></div><div class="t">'+r.ts+'</div></div></div>';
+}).join('');
+
+/* ---------- GLOBAL SEARCH ---------- */
+var SEARCH_INDEX = [];
+var SECTION_LABELS = {usuarios:'Usuarios',clientes:'Clientes',polizas:'Pólizas',presupuestos:'Presupuestos',aseguradoras:'Aseguradoras',comisiones:'Comisiones',wynpoints:'WynPoints',niveles:'Niveles',beneficios:'Beneficios',tarjetas:'Tarjetas regalo',comercios:'Comercios',telemedicina:'Telemedicina',documentos:'Documentos',mensajes:'Mensajes',notificaciones:'Notificaciones',automatizaciones:'Automatizaciones',logs:'Logs'};
+var PARENT_TAB = {comisiones:'aseguradoras',niveles:'wynpoints',tarjetas:'beneficios'};
+Object.keys(D).forEach(function(key){
+  var cfg = D[key];
+  var primaryKey = cfg.columns[0].key;
+  var secondaryKey = cfg.columns[1] ? cfg.columns[1].key : null;
+  cfg.rows.forEach(function(r){
+    SEARCH_INDEX.push({ tab: PARENT_TAB[key] || key, sub:key, section: SECTION_LABELS[key], primary: String(r[primaryKey]), secondary: secondaryKey ? String(r[secondaryKey]) : '' });
+  });
+});
+var gsInput = document.getElementById('globalSearch');
+var gsResults = document.getElementById('gsearchResults');
+gsInput.addEventListener('input', function(){
+  var q = gsInput.value.trim().toLowerCase();
+  if (!q){ gsResults.classList.remove('is-open'); gsResults.innerHTML=''; return; }
+  var matches = SEARCH_INDEX.filter(function(item){
+    return item.primary.toLowerCase().indexOf(q) > -1 || item.secondary.toLowerCase().indexOf(q) > -1;
+  }).slice(0,6);
+  gsResults.innerHTML = matches.length ? matches.map(function(m){
+    return '<button data-tab="'+m.tab+'" data-sub="'+m.sub+'"><span class="r-main">'+m.primary+'</span><span class="r-meta">'+m.section+(m.secondary?(' · '+m.secondary):'')+'</span></button>';
+  }).join('') : '<div class="gsearch-empty">Sin resultados</div>';
+  gsResults.classList.add('is-open');
+});
+gsResults.addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  switchTab(btn.dataset.tab);
+  var sub = btn.dataset.sub;
+  var subBtn = document.querySelector('.subtab[data-sub="'+sub+'"]');
+  if (subBtn) subBtn.click();
+  gsResults.classList.remove('is-open');
+  gsInput.value = '';
+});
+document.addEventListener('click', function(e){
+  if (!e.target.closest('.gsearch')) gsResults.classList.remove('is-open');
+});
+
+/* ---------- CONFIG ACTIONS ---------- */
+document.getElementById('saveGeneralBtn').addEventListener('click', function(){ showToast('Guardado localmente. La persistencia real llegará con Supabase.'); });
+document.querySelectorAll('[data-integ]').forEach(function(btn){
+  btn.addEventListener('click', function(){ showToast(btn.dataset.integ + ': pendiente de conectar por OpenClaw.'); });
+});
+
+/* ---------- SIDEBAR TOGGLE (mobile) ---------- */
+var sbToggle = document.getElementById("sbToggle");
+var sbOverlay = document.getElementById("sbOverlay");
+var sidebar = document.querySelector(".sidebar");
+if (sbToggle && sbOverlay && sidebar){
+  function openSidebar(){ sidebar.classList.add("is-open"); sbOverlay.classList.add("is-open"); }
+  function closeSidebar(){ sidebar.classList.remove("is-open"); sbOverlay.classList.remove("is-open"); }
+  sbToggle.addEventListener("click", function(e){ e.stopPropagation(); if(sidebar.classList.contains("is-open")) closeSidebar(); else openSidebar(); });
+  sbOverlay.addEventListener("click", closeSidebar);
+  document.querySelectorAll(".sb-item[data-tab]").forEach(function(item){
+    item.addEventListener("click", function(){ if(window.innerWidth < 981) closeSidebar(); });
+  });
+}
+// Also close sidebar on Escape key
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && sidebar && sidebar.classList.contains("is-open")) closeSidebar();
+});
+
+})();
+</script>
+</body>
+</html>

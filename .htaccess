@@ -1,0 +1,40 @@
+# Cache control for WynCare + SPA routing
+
+# SPA routing for WynCare - serve index.html for all unknown paths
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Admin panel at /admin
+  RewriteRule ^admin/?$ /wyncare-admin.html [L,QSA]
+  
+  # Serve actual files and directories directly
+  RewriteCond %{REQUEST_URI} -f [OR]
+  RewriteCond %{REQUEST_URI} -d [OR]
+  RewriteCond %{REQUEST_URI} \.(js|css|json|jpg|jpeg|png|gif|webp|svg|ico|woff2?|ttf|eot|pdf|zip|gz|tar)$ [NC]
+  RewriteRule ^ - [L]
+  # SPA: everything else -> index.html
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# HTML - never cache (fresh content always)
+<FilesMatch "\.(html)$">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires "0"
+</FilesMatch>
+
+# Versioned JS/CSS - cache forever (immutable), change filename to bust
+<FilesMatch "\.v\d+\.(js|css)$">
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# Unversioned JS/CSS - don't cache
+<FilesMatch "\.(js|css)$">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
+
+# Static assets - cache
+<FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|ico|woff2?)$">
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
