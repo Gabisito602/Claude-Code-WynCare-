@@ -1,5 +1,8 @@
--- Ejecuta esto en el SQL Editor de Supabase (Project > SQL Editor > New query)
--- y pásame el resultado (cópialo y pégalo aquí en el chat).
+-- Diagnóstico opcional (no es una migración, no hay que ponerlo en
+-- supabase/migrations/). Las migraciones ya están escritas para no chocar
+-- con lo que exista, pero si algo falla al aplicarse, corre esto en el SQL
+-- Editor de Supabase (Project > SQL Editor > New query) y pásame el
+-- resultado — así veo exactamente qué tienes y ajusto la migración.
 -- Solo lee metadatos, no toca ningún dato.
 
 select table_name, column_name, data_type, is_nullable, column_default

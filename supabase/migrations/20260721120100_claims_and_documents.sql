@@ -1,7 +1,7 @@
--- Ejecuta esto en el SQL Editor de Supabase para habilitar "Siniestros" y
--- "Documentos" en el Área Cliente. Antes de correrlo, confirma con
--- 00_inspect_schema.sql que "policies" tiene una columna "id" (uuid, PK) —
--- ambas tablas nuevas apuntan a ella con policy_id.
+-- Habilita "Siniestros" y "Documentos" en el Área Cliente.
+-- (Antes era supabase/01_claims_and_documents.sql, movido aquí y con
+-- "drop policy if exists" delante de cada policy para poder reaplicarse
+-- sin error si ya se hubiera ejecutado a mano.)
 
 create table if not exists public.claims (
   id uuid primary key default gen_random_uuid(),
@@ -18,14 +18,16 @@ create table if not exists public.claims (
 
 alter table public.claims enable row level security;
 
+drop policy if exists "usuarios ven sus propios siniestros" on public.claims;
 create policy "usuarios ven sus propios siniestros" on public.claims
   for select using (auth.uid() = user_id);
 
+drop policy if exists "usuarios declaran sus propios siniestros" on public.claims;
 create policy "usuarios declaran sus propios siniestros" on public.claims
   for insert with check (auth.uid() = user_id);
 
--- Los documentos los sube el equipo (admin/backend), los clientes solo leen
--- los de sus propias pólizas.
+-- Los documentos los sube el equipo (admin), los clientes solo leen los de
+-- sus propias pólizas.
 create table if not exists public.policy_documents (
   id uuid primary key default gen_random_uuid(),
   policy_id uuid not null references public.policies(id) on delete cascade,
@@ -36,6 +38,7 @@ create table if not exists public.policy_documents (
 
 alter table public.policy_documents enable row level security;
 
+drop policy if exists "usuarios ven documentos de sus propias pólizas" on public.policy_documents;
 create policy "usuarios ven documentos de sus propias pólizas" on public.policy_documents
   for select using (
     exists (
