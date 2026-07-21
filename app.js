@@ -29,7 +29,9 @@ function offlineSupabaseClient() {
     limit: function() { return chain; },
     upsert: function() { return Promise.resolve({ data: null, error: err }); },
     update: function() { return chain; },
-    insert: function() { return Promise.resolve({ data: null, error: err }); }
+    // Encadenable (igual que "chain") para que ".insert(x).select().single()"
+    // funcione igual que con el cliente real, no solo ".insert(x)" a secas.
+    insert: function() { return chain; }
   };
   return {
     auth: {
@@ -79,8 +81,15 @@ function renderQuoteStatus(status) {
   }).join('') + '</div>';
 }
 
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// La tabla "quotes" real no tiene columna "reference" — la calculamos a
+// partir del id para tener algo corto y legible que mostrar.
+function friendlyRef(prefix, id) { return prefix + '-' + String(id || '').replace(/-/g, '').slice(0, 8).toUpperCase(); }
+
 function renderQuoteCard(q) {
-  var icon = getPolicyIcon(q.quote_type);
+  var fd = q.form_data || {};
+  var icon = getPolicyIcon(q.type);
   var dateLabel = q.created_at ? new Date(q.created_at).toLocaleDateString('es-ES') : '';
   var body;
   if (q.status === 'rejected') {
@@ -95,7 +104,7 @@ function renderQuoteCard(q) {
     }
   }
   return '<div class="quote-card"><div class="quote-card-head"><span class="ic"><svg class="icon"><use href="#' + icon + '"/></svg></span>' +
-    '<div class="info"><div class="nm">' + esc(q.quote_type || 'Seguro') + '</div><div class="ref">' + esc(q.reference || '') + (dateLabel ? ' · ' + dateLabel : '') + '</div></div>' +
+    '<div class="info"><div class="nm">' + esc(capitalize(q.type) || 'Seguro') + '</div><div class="ref">' + esc(friendlyRef('PR', q.id)) + (dateLabel ? ' · ' + dateLabel : '') + '</div></div>' +
     '<div class="pr">' + formatCurrency(parseFloat(q.premium || 0)) + '€/mes</div></div>' + body + '</div>';
 }
 
@@ -444,8 +453,10 @@ async function handleRegister(name, email, password) {
     const { data, error } = await sb.auth.signUp({ email, password });
     if (error) throw error;
     if (data?.user) {
+      // "profiles" no tiene columna "email" (el correo vive en auth.users,
+      // vía Supabase Auth) — solo guardamos aquí el nombre.
       await sb.from('profiles').upsert({
-        id: data.user.id, email, full_name: name, created_at: new Date().toISOString()
+        id: data.user.id, full_name: name
       }, { onConflict: 'id' });
     }
     localStorage.setItem('wyncare_pending_confirmation', email);
@@ -486,6 +497,15 @@ async function loadUserData() {
     currentPolicies = policies || [];
   } catch (err) {
     currentProfile = { full_name: currentUser.email?.split('@')[0] || 'Usuario' };
+  }
+  try {
+    // "profiles" no guarda un total de WynPoints — el saldo es la suma de
+    // los movimientos en "wynpoints_transactions" (positivos y negativos).
+    const { data: transactions, error } = await sb.from('wynpoints_transactions').select('amount').eq('user_id', currentUser.id);
+    if (error) throw error;
+    currentProfile.wynpoints = (transactions || []).reduce((sum, t) => sum + (t.amount || 0), 0);
+  } catch (err) {
+    currentProfile.wynpoints = currentProfile.wynpoints || 0;
   }
   try {
     const policyIds = currentPolicies.map(p => p.id).filter(Boolean);
@@ -570,7 +590,7 @@ function updatePoliciesTab() {
       const a = (p.status === 'active' || p.status === 'Activo');
       const doc = currentPolicyDocuments.find(d => d.policy_id === p.id);
       const dlLink = doc ? '<a class="doc-link" href="' + esc(doc.url) + '" target="_blank" rel="noopener">Descargar póliza</a>' : '';
-      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span>' + dlLink + '<a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>';
+      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(capitalize(p.type || p.policy_type) || 'Seguro') + '</div><div class="ref">' + esc(p.policy_number || p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span>' + dlLink + '<a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>';
     }).join('');
   }
 }
@@ -656,12 +676,18 @@ async function saveQuote() {
   if (!currentUser) { navigate('#/login'); return; }
   var btn = $('saveQuoteBtn'); btn.disabled = true; btn.textContent = 'Guardando...';
   try {
-    var ref = 'WC-' + Date.now().toString(36).toUpperCase();
-    var { error } = await sb.from('quotes').insert({
-      user_id: currentUser.id, quote_type: selectedQuote.name, premium: selectedQuote.price,
-      coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts, reference: ref, status: 'pending_docs', created_at: new Date().toISOString()
-    });
+    // "quotes" no tiene columnas "quote_type"/"coverage_description"/
+    // "wynpoints"/"reference": el tipo va en "type" (enum insurance_type,
+    // en min\u00fasculas) y el resto de datos variables van dentro de "form_data".
+    var { data, error } = await sb.from('quotes').insert({
+      user_id: currentUser.id,
+      type: selectedQuote.name.toLowerCase(),
+      premium: selectedQuote.price,
+      form_data: { coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts },
+      status: 'pending_docs'
+    }).select().single();
     if (error) throw error;
+    var ref = friendlyRef('WC', data && data.id);
     $('successRef').textContent = ref;
     var successEl = $('successBlock');
     if (successEl) successEl.classList.add('is-shown');
