@@ -3,8 +3,8 @@
    ============================================================ */
 
 /* ---------- CONFIG ---------- */
-const SUPABASE_URL = 'https://leiyhsgajiuxxdznivvl.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlaXloc2dhaml1eHhkem5pdnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjkzMTIsImV4cCI6MjA5OTU0NTMxMn0.2E_yyH3PPIfQQxK1O8v8seDh-lcVQ4Bna35SXAq2GXg';
+const SUPABASE_URL = 'https://gpcavoymhsivyorkxbam.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwY2F2b3ltaHNpdnlvcmt4YmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDcwNTUsImV4cCI6MjA5OTcyMzA1NX0.XA5GglnK6gn82HvV3CL7J2xzkQsGqFuRbhvG-yFERDU';
 // La clave service_role NUNCA debe estar en código de cliente: cualquier visitante
 // puede leerla y saltarse las políticas RLS. Las operaciones de admin que la
 // necesiten deben vivir en una Edge Function de Supabase.
