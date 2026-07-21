@@ -26,7 +26,7 @@
 </script>
 <script>/* aplica el tema guardado antes del primer render para evitar el flash */
 try{var _t=localStorage.getItem('wyncare-theme');if(_t)document.documentElement.setAttribute('data-theme',_t)}catch(e){}</script>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230A0F1C'/%3E%3Cpath d='M12 4l6 2.4v5.2c0 4.3-2.9 6.9-6 7.8-3.1-.9-6-3.5-6-7.8V6.4L12 4z' fill='none' stroke='%23D8B573' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- Google Fonts se carga solo si aceptas cookies no esenciales (ver banner + app.js).
@@ -85,7 +85,8 @@ em.accent{font-style:normal;color:var(--gold)}
 .scroll-progress{position:absolute;left:0;bottom:-1px;height:2px;width:0%;background:linear-gradient(90deg,var(--gold),var(--violet),var(--teal));transition:width .1s linear;z-index:2}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;padding-block:.85rem}
 .brand{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.15rem;letter-spacing:-.01em}
-.brand .mark{width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none}
+.brand .mark{width:34px;height:34px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex:none}
+.brand .mark img{width:100%;height:100%;object-fit:cover}
 .brand .mark svg{width:18px;height:18px;stroke:var(--gold-ink)}
 .brand em{font-style:normal;color:var(--gold)}
 .nav-links{display:flex;align-items:center;gap:1.9rem}
@@ -448,7 +449,8 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
   background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:22px 22px;
 }
 .app-brand{display:flex;align-items:center;gap:.6rem;font-weight:800;padding:.4rem;font-size:1.05rem}
-.app-brand .mark{width:30px;height:30px;border-radius:8px;background:var(--gold);display:flex;align-items:center;justify-content:center}
+.app-brand .mark{width:30px;height:30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.app-brand .mark img{width:100%;height:100%;object-fit:cover}
 .app-brand .mark svg{width:16px;height:16px;stroke:var(--gold-ink)}
 .app-brand em{font-style:normal;color:#E8C98F}
 .app-menu{display:flex;flex-direction:column;gap:.2rem;flex:1}
@@ -697,8 +699,8 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
     <span class="scroll-progress" id="scrollProgress"></span>
     <div class="container nav-inner">
       <a class="brand" href="#/">
-        <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>
-        Wyn<em>Care</em>
+        <span class="mark"><img src="logo.png" alt="WynCare"></span>
+        <span class="brand-name">Wyn<em>Care</em></span>
       </a>
       <nav class="nav-links" aria-label="Navegación principal">
         <a href="#features">Funcionalidades</a>
@@ -757,7 +759,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <div class="pass-card" id="tiltCard">
             <div class="pass-top">
               <span class="pass-chip"></span>
-              <span class="pass-brand"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg>WynCare</span>
+              <span class="pass-brand"><img src="logo.png" alt="WynCare">WynCare</span>
             </div>
             <div class="pass-tier">Tarjeta de cobertura</div>
             <div class="pass-num">WC •••• •••• 0931</div>
@@ -1105,7 +1107,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
   <footer>
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="mark" style="width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" style="width:18px;height:18px;stroke:var(--gold-ink)"><use href="#i-shield"/></svg></span>
+        <span class="mark" style="width:34px;height:34px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center"><img src="logo.png" alt="WynCare" style="width:100%;height:100%;object-fit:cover"></span>
         <p>Simplificamos tu protección mediante tecnología e inteligencia artificial.</p>
       </div>
       <div class="footer-links"><a href="#/terminos">Términos</a><a href="#/privacidad">Privacidad</a><a href="#/cookies">Cookies</a></div>
@@ -1118,7 +1120,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <div class="view" id="view-login">
   <div class="auth-shell">
     <aside class="auth-aside">
-      <a class="brand" href="#/" style="color:#F4F2EC"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>Wyn<em>Care</em></a>
+      <a class="brand" href="#/" style="color:#F4F2EC"><span class="mark"><img src="logo.png" alt="WynCare"></span><span class="brand-name">Wyn<em>Care</em></span></a>
       <div class="auth-quote">
         <p>"Contraté coche y hogar en 10 minutos, sin una sola llamada. Y ya llevo 700 WynPoints."</p>
         <div class="who">— Ana G., cliente desde 2024</div>
@@ -1150,7 +1152,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <div class="view" id="view-registro">
   <div class="auth-shell">
     <aside class="auth-aside">
-      <a class="brand" href="#/" style="color:#F4F2EC"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>Wyn<em>Care</em></a>
+      <a class="brand" href="#/" style="color:#F4F2EC"><span class="mark"><img src="logo.png" alt="WynCare"></span><span class="brand-name">Wyn<em>Care</em></span></a>
       <div class="auth-quote">
         <p>"Todos mis seguros, mis puntos y mis consultas médicas en una sola app. Así debería ser esto."</p>
         <div class="who">— Marc R., cliente desde 2025</div>
@@ -1184,7 +1186,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <div class="view" id="view-recuperar">
   <div class="auth-shell">
     <aside class="auth-aside">
-      <a class="brand" href="#/" style="color:#F4F2EC"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><use href="#i-shield"/></svg></span>Wyn<em>Care</em></a>
+      <a class="brand" href="#/" style="color:#F4F2EC"><span class="mark"><img src="logo.png" alt="WynCare"></span><span class="brand-name">Wyn<em>Care</em></span></a>
       <div class="auth-quote"><p>Te ayudamos a volver a entrar en menos de un minuto.</p></div>
     </aside>
     <div class="auth-form-wrap">
@@ -1335,7 +1337,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <!-- ============================== VIEW: APP (Área Cliente) ============================== -->
 <div class="view" id="view-app">
   <aside class="app-sidebar">
-    <div class="app-brand"><span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" style="width:16px;height:16px"><use href="#i-shield"/></svg></span>Wyn<em>Care</em></div>
+    <div class="app-brand"><span class="mark"><img src="logo.png" alt="WynCare"></span><span class="brand-name">Wyn<em>Care</em></span></div>
     <nav class="app-menu" aria-label="Menú del área cliente">
       <a class="app-menu-item" href="#/app/resumen" data-tab="resumen"><svg class="icon"><use href="#i-grid"/></svg>Resumen</a>
       <a class="app-menu-item" href="#/app/seguros" data-tab="seguros"><svg class="icon"><use href="#i-shield"/></svg>Mis seguros</a>
