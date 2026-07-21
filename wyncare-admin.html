@@ -645,6 +645,28 @@ function formatDateEs(d){
   try { return new Date(d).toLocaleDateString('es-ES'); } catch (e) { return '—'; }
 }
 
+function formatEsNumber(n){
+  var fixed = Math.round(n).toString();
+  var sign = fixed.charAt(0) === '-' ? '-' : '';
+  if (sign) fixed = fixed.slice(1);
+  return sign + fixed.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/* Mismos umbrales que getTier() en app.js: hay que mantenerlos sincronizados
+   si cambia el programa de niveles. */
+function getTier(points){
+  if (points >= 12000) return 'Platino';
+  if (points >= 6000) return 'Oro';
+  if (points >= 2000) return 'Plata';
+  return 'Bronce';
+}
+
+function isSameMonth(dateStr, ref){
+  if (!dateStr) return false;
+  var d = new Date(dateStr);
+  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+}
+
 /* ---------- TEMA ---------- */
 var root = document.documentElement;
 function setTheme(mode){ root.setAttribute('data-theme', mode); }
@@ -719,6 +741,9 @@ async function checkAdminAndEnter(user){
     showAdminApp(res.data.full_name || (user.email || '').split('@')[0] || 'Admin');
     refreshPresupuestos();
     refreshPolizas();
+    refreshUsuarios();
+    refreshClientes();
+    refreshWynpoints();
     return true;
   } catch (e) {
     showGateError('No se pudo comprobar el permiso de administrador. Inténtalo de nuevo.');
@@ -954,28 +979,15 @@ function openManageModal(cfg, idx, onSaved){
 var D = {
   usuarios:{
     title:'Usuarios', addLabel:'Nuevo usuario',
-    stats:[['5','usuarios totales'],['4','activos'],['2','administradores']],
+    stats:[['—','cuentas de equipo (rol admin)']],
     columns:[{key:'nombre',label:'Nombre'},{key:'email',label:'Email',mono:true},{key:'rol',label:'Rol',badge:true},{key:'estado',label:'Estado',badge:true},{key:'acceso',label:'Último acceso',align:'right'}],
-    rows:[
-      {nombre:'Gabriel Calvo',email:'gabriel@wyncare.es',rol:'Admin',estado:'Activo',acceso:'Ahora'},
-      {nombre:'Laura Martín',email:'laura@wyncare.es',rol:'Admin',estado:'Activo',acceso:'Hace 2h'},
-      {nombre:'Marc Puig',email:'marc@wyncare.es',rol:'Soporte',estado:'Activo',acceso:'Hace 1 día'},
-      {nombre:'Iria Souto',email:'iria@wyncare.es',rol:'Editor',estado:'Activo',acceso:'Hace 3 días'},
-      {nombre:'David Ruiz',email:'david@wyncare.es',rol:'Soporte',estado:'Inactivo',acceso:'Hace 21 días'}
-    ]
+    rows:[]
   },
   clientes:{
     title:'Clientes', addLabel:'Nuevo cliente',
-    stats:[['1.248','clientes totales'],['82%','con póliza activa'],['+34','este mes']],
+    stats:[['—','clientes totales'],['—','con póliza activa'],['—','este mes']],
     columns:[{key:'nombre',label:'Nombre'},{key:'email',label:'Email',mono:true},{key:'nivel',label:'Nivel',badge:true},{key:'seguros',label:'Seguros'},{key:'pts',label:'WynPoints',align:'right'},{key:'alta',label:'Alta',align:'right'}],
-    rows:[
-      {nombre:'Ana García',email:'ana@ejemplo.com',nivel:'Plata',seguros:'4',pts:'4.850',alta:'12/03/2024'},
-      {nombre:'Marc Rovira',email:'marc.r@ejemplo.com',nivel:'Bronce',seguros:'1',pts:'320',alta:'04/01/2025'},
-      {nombre:'Laia Ferrer',email:'laia@ejemplo.com',nivel:'Oro',seguros:'5',pts:'7.100',alta:'22/08/2023'},
-      {nombre:'Jordi Camps',email:'jordi@ejemplo.com',nivel:'Bronce',seguros:'2',pts:'900',alta:'30/05/2025'},
-      {nombre:'Núria Soler',email:'nuria@ejemplo.com',nivel:'Platino',seguros:'6',pts:'13.400',alta:'14/11/2022'},
-      {nombre:'Pol Vidal',email:'pol@ejemplo.com',nivel:'Plata',seguros:'3',pts:'3.200',alta:'09/02/2025'}
-    ]
+    rows:[]
   },
   polizas:{
     title:'Pólizas', addLabel:'Nueva póliza',
@@ -1048,16 +1060,9 @@ var D = {
   },
   wynpoints:{
     title:'Movimientos de WynPoints', addLabel:'Ajuste manual',
-    stats:[['2,1M','pts en circulación'],['+18.400','emitidos este mes'],['-6.200','canjeados este mes']],
+    stats:[['—','pts en circulación'],['—','emitidos este mes'],['—','canjeados este mes']],
     columns:[{key:'cliente',label:'Cliente'},{key:'motivo',label:'Motivo'},{key:'pts',label:'Puntos',align:'right'},{key:'fecha',label:'Fecha',align:'right'}],
-    rows:[
-      {cliente:'Ana García',motivo:'Alta seguro Vida',pts:'+2.500',fecha:'12/03/2024'},
-      {cliente:'Núria Soler',motivo:'Renovación Hogar',pts:'+600',fecha:'10/07/2026'},
-      {cliente:'Laia Ferrer',motivo:'Canje tarjeta regalo',pts:'-800',fecha:'08/07/2026'},
-      {cliente:'Marc Rovira',motivo:'Alta seguro Coche',pts:'+700',fecha:'04/01/2025'},
-      {cliente:'Pol Vidal',motivo:'Bono de bienvenida',pts:'+200',fecha:'09/02/2025'},
-      {cliente:'Jordi Camps',motivo:'Canje gimnasio',pts:'-1.200',fecha:'01/07/2026'}
-    ]
+    rows:[]
   },
   niveles:{
     title:'Niveles', addLabel:'Nuevo nivel',
@@ -1334,6 +1339,120 @@ async function refreshPolizas(){
     refreshSearchIndexSection('polizas');
   } catch (err) {
     showToast('No se pudieron cargar las pólizas: ' + err.message);
+  }
+}
+
+/* ---------- DATOS REALES: Usuarios, Clientes y WynPoints ---------- */
+async function fetchAllProfiles(){
+  if (!sb) return [];
+  var res = await sb.from('profiles').select('*');
+  if (res.error) throw res.error;
+  return res.data || [];
+}
+
+// "amount"/"description" son los nombres reales confirmados en app.js
+// (loadUserData). Se leen con fallback a "points"/"transaction_type" por si
+// el proyecto real usa los nombres que proponía la migración base.
+function txAmount(t){ return (t.amount != null ? t.amount : t.points) || 0; }
+function txMotivo(t){ return t.description || t.transaction_type || t.type || '—'; }
+
+async function refreshUsuarios(){
+  if (!sb) return;
+  try {
+    var profiles = await fetchAllProfiles();
+    var staff = profiles.filter(function(p){ return p.role === 'admin'; });
+    var rows = staff.map(function(p){
+      return {
+        nombre: p.full_name || (p.email || '').split('@')[0] || '—',
+        email: p.email || '—',
+        rol: 'Admin',
+        estado: '—',
+        acceso: '—'
+      };
+    });
+    var cfg = D.usuarios;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    cfg.stats = [[String(rows.length), 'cuentas de equipo (rol admin)']];
+    mountTable('mount-usuarios', cfg);
+    refreshSearchIndexSection('usuarios');
+  } catch (err) {
+    showToast('No se pudieron cargar los usuarios: ' + err.message);
+  }
+}
+
+async function refreshClientes(){
+  if (!sb) return;
+  try {
+    var profiles = await fetchAllProfiles();
+    var clients = profiles.filter(function(p){ return p.role !== 'admin'; });
+    var policiesRes = await sb.from('policies').select('user_id');
+    if (policiesRes.error) throw policiesRes.error;
+    var txRes = await sb.from('wynpoints_transactions').select('*');
+    if (txRes.error) throw txRes.error;
+
+    var policyCountByUser = {};
+    (policiesRes.data || []).forEach(function(p){ policyCountByUser[p.user_id] = (policyCountByUser[p.user_id] || 0) + 1; });
+    var ptsByUser = {};
+    (txRes.data || []).forEach(function(t){ ptsByUser[t.user_id] = (ptsByUser[t.user_id] || 0) + txAmount(t); });
+
+    var now = new Date();
+    var rows = clients.map(function(p){
+      var pts = ptsByUser[p.id] || 0;
+      return {
+        nombre: p.full_name || (p.email || '').split('@')[0] || '—',
+        email: p.email || '—',
+        nivel: getTier(pts),
+        seguros: String(policyCountByUser[p.id] || 0),
+        pts: formatEsNumber(pts),
+        alta: formatDateEs(p.created_at),
+        _newThisMonth: isSameMonth(p.created_at, now),
+        _hasPolicy: !!policyCountByUser[p.id]
+      };
+    });
+    var cfg = D.clientes;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var conPoliza = rows.filter(function(r){ return r._hasPolicy; }).length;
+    var pct = rows.length ? Math.round((conPoliza / rows.length) * 100) + '%' : '—';
+    var nuevos = rows.filter(function(r){ return r._newThisMonth; }).length;
+    cfg.stats = [[String(rows.length), 'clientes totales'], [pct, 'con póliza activa'], ['+' + nuevos, 'este mes']];
+    mountTable('mount-clientes', cfg);
+    refreshSearchIndexSection('clientes');
+  } catch (err) {
+    showToast('No se pudieron cargar los clientes: ' + err.message);
+  }
+}
+
+async function refreshWynpoints(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('wynpoints_transactions').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var txs = res.data || [];
+    var profiles = await fetchProfilesByIds(txs.map(function(t){ return t.user_id; }));
+    var rows = txs.map(function(t){
+      var profile = profiles[t.user_id];
+      var amount = txAmount(t);
+      return {
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        motivo: txMotivo(t),
+        pts: (amount >= 0 ? '+' : '') + formatEsNumber(amount),
+        fecha: formatDateEs(t.created_at)
+      };
+    });
+    var cfg = D.wynpoints;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var now = new Date();
+    var enCirculacion = txs.reduce(function(sum, t){ return sum + txAmount(t); }, 0);
+    var emitidosMes = txs.filter(function(t){ return isSameMonth(t.created_at, now) && txAmount(t) > 0; }).reduce(function(sum, t){ return sum + txAmount(t); }, 0);
+    var canjeadosMes = txs.filter(function(t){ return isSameMonth(t.created_at, now) && txAmount(t) < 0; }).reduce(function(sum, t){ return sum + txAmount(t); }, 0);
+    cfg.stats = [[formatEsNumber(enCirculacion), 'pts en circulación'], ['+' + formatEsNumber(emitidosMes), 'emitidos este mes'], [formatEsNumber(canjeadosMes), 'canjeados este mes']];
+    mountTable('mount-wynpoints', cfg);
+    refreshSearchIndexSection('wynpoints');
+  } catch (err) {
+    showToast('No se pudieron cargar los movimientos de WynPoints: ' + err.message);
   }
 }
 
