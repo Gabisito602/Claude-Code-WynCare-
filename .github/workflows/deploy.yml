@@ -1,0 +1,34 @@
+name: Deploy a Hostinger (wyncare.es)
+
+on:
+  push:
+    branches:
+      - main
+      - claude/wyncare-code-review-uuao2c
+  workflow_dispatch:
+
+jobs:
+  ftp-deploy:
+    name: Subir a wyncare.es por FTP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Desplegar por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          # Si tu cuenta FTP no aterriza directamente en la carpeta pública
+          # del dominio, cambia esto a algo como /public_html/ o
+          # /domains/wyncare.es/public_html/
+          server-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            README.md
+            supabase/**
