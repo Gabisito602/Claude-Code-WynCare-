@@ -170,6 +170,25 @@ em.accent{font-style:normal;color:var(--gold)}
 .logo-row span:hover{color:var(--text-1);filter:none;opacity:1}
 
 /* ==================================================================
+   5b. CALCULADORA
+   ================================================================== */
+.calc-section .container{max-width:920px}
+.calc-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:clamp(1.5rem,4vw,2.2rem);box-shadow:var(--shadow-1)}
+.calc-types.type-grid{grid-template-columns:repeat(6,1fr)}
+.calc-types .type-card{align-items:center;text-align:center;gap:.4rem;padding:.85rem .5rem}
+.calc-types .type-card svg{width:18px;height:18px;color:var(--gold);margin-inline:auto}
+.calc-body{margin-top:1.4rem;padding-top:1.4rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:1rem}
+.calc-levels{display:flex;gap:.4rem}
+.calc-level{flex:1;padding:.6rem .5rem;border-radius:var(--radius-full);border:1.5px solid var(--border-strong);font-size:.82rem;font-weight:600;color:var(--text-2);text-align:center;transition:background .15s ease,border-color .15s ease,color .15s ease}
+.calc-level[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.calc-result{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.calc-price{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--gold)}
+.calc-price small{font-size:1rem;color:var(--text-3);font-weight:400;margin-left:.3rem}
+.calc-pts{font-size:.86rem;color:var(--text-2)}
+.calc-legal{font-size:.72rem;color:var(--text-3);text-align:center;margin-top:-.4rem}
+@media (max-width:640px){.calc-types.type-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* ==================================================================
    6. ABOUT / MOCKUP
    ================================================================== */
 .about-inner{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2.5rem,5vw,4rem);align-items:center}
@@ -236,6 +255,23 @@ em.accent{font-style:normal;color:var(--gold)}
 .how-step p{color:var(--text-2);font-size:.88rem}
 @media (max-width:900px){.how-steps{grid-template-columns:1fr 1fr;row-gap:2rem}.how-steps::before{display:none}}
 @media (max-width:560px){.how-steps{grid-template-columns:1fr}}
+
+/* ==================================================================
+   8b. COMPARATIVA
+   ================================================================== */
+.compare-card{max-width:820px;margin-inline:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.compare-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;align-items:center;padding:.9rem 1.3rem;border-bottom:1px solid var(--border)}
+.compare-row:last-child{border-bottom:0}
+.compare-head{background:var(--surface-2);font-weight:700;font-size:.82rem}
+.compare-col-h{text-align:center;color:var(--text-2)}
+.compare-col-h.best{color:var(--gold)}
+.compare-label{font-size:.9rem}
+.compare-x,.compare-check{display:flex;justify-content:center}
+.compare-x svg{width:16px;height:16px;color:var(--text-3)}
+.compare-check svg{width:16px;height:16px;color:var(--success)}
+.compare-eq{text-align:center;font-size:.85rem;color:var(--text-2);font-weight:600}
+.compare-eq.best{color:var(--gold)}
+@media (max-width:640px){.compare-row{grid-template-columns:1.2fr .7fr .7fr;padding:.75rem .9rem}.compare-label{font-size:.8rem}}
 
 /* ==================================================================
    9. WYNPOINTS + TELEMEDICINA (marketing teasers)
@@ -562,6 +598,12 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 .teddy-launcher:hover{transform:translateY(-2px) scale(1.03)}
 .teddy-launcher svg{width:24px;height:24px}
 .teddy-dot{position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:50%;background:var(--success);border:2px solid var(--canvas)}
+.teddy-launcher.teddy-attract::before{
+  content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--gold);
+  animation:teddy-ring 1.8s ease-out infinite;pointer-events:none;
+}
+@keyframes teddy-ring{0%{transform:scale(.9);opacity:.8}100%{transform:scale(1.45);opacity:0}}
+@media (prefers-reduced-motion:reduce){.teddy-launcher.teddy-attract::before{animation:none}}
 
 .teddy-panel{
   position:fixed;right:1.4rem;bottom:1.4rem;z-index:90;width:378px;max-width:calc(100vw - 2rem);height:min(600px,calc(100vh - 3rem));
@@ -733,6 +775,40 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
       </div>
     </section>
 
+    <!-- CALCULADORA -->
+    <section id="calculadora" class="calc-section section-pad" style="scroll-margin-top:90px">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Calculadora</span>
+          <h2>Calcula tu seguro en 30 segundos</h2>
+          <p>Sin registrarte. Elige qué quieres proteger y ajusta el nivel de cobertura.</p>
+        </div>
+        <div class="calc-card reveal">
+          <div class="type-grid calc-types" id="calcTypes">
+            <button class="type-card" type="button" data-type="Coche" aria-pressed="true"><svg><use href="#i-car"/></svg><span class="tn">Coche</span></button>
+            <button class="type-card" type="button" data-type="Hogar" aria-pressed="false"><svg><use href="#i-home"/></svg><span class="tn">Hogar</span></button>
+            <button class="type-card" type="button" data-type="Salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span></button>
+            <button class="type-card" type="button" data-type="Vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span></button>
+            <button class="type-card" type="button" data-type="Empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span></button>
+            <button class="type-card" type="button" data-type="Telemedicina" aria-pressed="false"><svg><use href="#i-pulse"/></svg><span class="tn">Telemedicina</span></button>
+          </div>
+          <div class="calc-body">
+            <div class="calc-levels" id="calcLevels">
+              <button class="calc-level" type="button" data-level="Básica" aria-pressed="false">Básica</button>
+              <button class="calc-level" type="button" data-level="Estándar" aria-pressed="true">Estándar</button>
+              <button class="calc-level" type="button" data-level="Completa" aria-pressed="false">Completa</button>
+            </div>
+            <div class="calc-result">
+              <div class="calc-price"><span id="calcPrice">35,00€</span><small>/mes</small></div>
+              <div class="calc-pts">+<span id="calcPts">700</span> WynPoints al activarlo</div>
+            </div>
+            <a class="btn btn-primary btn-block" href="#/registro" id="calcCta">Crear cuenta y contratar <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
+            <p class="calc-legal">*Precio orientativo hasta validación por la aseguradora.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PARTNERS -->
     <section class="partners">
       <div class="container">
@@ -834,6 +910,30 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <div class="how-step reveal"><div class="how-num">2</div><h3>Comparamos</h3><p>Analizamos el mercado y te mostramos las mejores opciones.</p></div>
           <div class="how-step reveal"><div class="how-num">3</div><h3>Contrata</h3><p>Elige y contrata con ayuda de IA. Todo digital, sin papeleo.</p></div>
           <div class="how-step reveal"><div class="how-num">4</div><h3>Gestiona</h3><p>Centraliza todo desde tu Dashboard: pólizas, puntos, salud.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPARATIVA -->
+    <section id="comparativa" class="section-pad" style="background:var(--surface-2)">
+      <div class="container">
+        <div class="section-head center reveal">
+          <span class="eyebrow">Por qué WynCare</span>
+          <h2>Lo mismo que ya conoces, sin la parte pesada</h2>
+          <p>Mismas aseguradoras (AXA, Mapfre, Sanitas, Allianz, Generali), mismo precio de póliza — con menos fricción y más recompensas.</p>
+        </div>
+        <div class="compare-card reveal">
+          <div class="compare-row compare-head">
+            <div></div>
+            <div class="compare-col-h">Ir directo a la aseguradora</div>
+            <div class="compare-col-h best">WynCare</div>
+          </div>
+          <div class="compare-row"><div class="compare-label">Comparar varias aseguradoras a la vez</div><div class="compare-x"><svg class="icon"><use href="#i-close"/></svg></div><div class="compare-check"><svg class="icon"><use href="#i-check"/></svg></div></div>
+          <div class="compare-row"><div class="compare-label">Todas tus pólizas en un único panel</div><div class="compare-x"><svg class="icon"><use href="#i-close"/></svg></div><div class="compare-check"><svg class="icon"><use href="#i-check"/></svg></div></div>
+          <div class="compare-row"><div class="compare-label">WynPoints y recompensas</div><div class="compare-x"><svg class="icon"><use href="#i-close"/></svg></div><div class="compare-check"><svg class="icon"><use href="#i-check"/></svg></div></div>
+          <div class="compare-row"><div class="compare-label">Teddy, asistente con IA 24/7</div><div class="compare-x"><svg class="icon"><use href="#i-close"/></svg></div><div class="compare-check"><svg class="icon"><use href="#i-check"/></svg></div></div>
+          <div class="compare-row"><div class="compare-label">Telemedicina incluida</div><div class="compare-x"><svg class="icon"><use href="#i-close"/></svg></div><div class="compare-check"><svg class="icon"><use href="#i-check"/></svg></div></div>
+          <div class="compare-row"><div class="compare-label">Precio de la póliza</div><div class="compare-eq">El mismo</div><div class="compare-eq best">El mismo</div></div>
         </div>
       </div>
     </section>

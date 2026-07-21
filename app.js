@@ -106,8 +106,22 @@ function showAppTab(id) {
   if (tab) tab.classList.add('is-active');
   qsa('.app-menu-item').forEach(item => {
     item.removeAttribute('aria-current');
-    if (item.getAttribute('data-tab') === id) item.setAttribute('aria-current', 'page');
+    if ('tab-' + item.getAttribute('data-tab') === id) item.setAttribute('aria-current', 'page');
   });
+  if (id === 'tab-presupuestos') applyLandingQuoteHandoff();
+}
+
+function applyLandingQuoteHandoff() {
+  var grid = $('typeGrid');
+  if (!grid) return;
+  try {
+    var stored = JSON.parse(localStorage.getItem('wyncare_landing_quote') || 'null');
+    if (stored && stored.type) {
+      var match = grid.querySelector('.type-card[data-name="' + stored.type + '"]');
+      if (match) match.click();
+      localStorage.removeItem('wyncare_landing_quote');
+    }
+  } catch (e) {}
 }
 
 /* ---------- THEME ---------- */
@@ -326,7 +340,7 @@ function initQuoteSelector() {
   grid.addEventListener('click', function(e) {
     var card = e.target.closest('.type-card');
     if (!card) return;
-    qsa('.type-card').forEach(function(c) { c.setAttribute('aria-pressed', 'false'); });
+    qsa('.type-card', grid).forEach(function(c) { c.setAttribute('aria-pressed', 'false'); });
     card.setAttribute('aria-pressed', 'true');
     selectedQuote = { name: card.dataset.name, price: parseFloat(card.dataset.price), pts: parseInt(card.dataset.pts), cov: card.dataset.cov };
     $('prevPrice').textContent = formatCurrency(selectedQuote.price);
@@ -337,6 +351,60 @@ function initQuoteSelector() {
     var successEl = $('successBlock');
     if (successEl) successEl.classList.remove('is-shown');
     $('saveQuoteBtn').style.display = '';
+  });
+}
+
+/* ---------- CALCULADORA (landing) ---------- */
+function initLandingCalculator() {
+  var typesEl = $('calcTypes'), levelsEl = $('calcLevels');
+  if (!typesEl || !levelsEl) return;
+
+  var CALC_PTS = { Coche: 700, Hogar: 600, Salud: 1500, Vida: 2500, Empresa: 3500, Telemedicina: 0 };
+  var CALC_PRICE = { Coche: 35, Hogar: 22, Salud: 45, Vida: 15, Empresa: 80, Telemedicina: 9 };
+  var CALC_MULT = { 'Básica': 0.8, 'Estándar': 1, 'Completa': 1.3 };
+  var state = { type: 'Coche', level: 'Estándar' };
+
+  function render() {
+    var price = CALC_PRICE[state.type] * CALC_MULT[state.level];
+    var pts = Math.round(CALC_PTS[state.type] * CALC_MULT[state.level]);
+    $('calcPrice').textContent = formatCurrency(price) + '€';
+    $('calcPts').textContent = pts.toLocaleString();
+    try {
+      localStorage.setItem('wyncare_landing_quote', JSON.stringify({ type: state.type, level: state.level, price: price, pts: pts }));
+    } catch (e) {}
+  }
+
+  typesEl.addEventListener('click', function(e) {
+    var btn = e.target.closest('.type-card');
+    if (!btn) return;
+    qsa('.type-card', typesEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    state.type = btn.dataset.type;
+    render();
+  });
+
+  levelsEl.addEventListener('click', function(e) {
+    var btn = e.target.closest('.calc-level');
+    if (!btn) return;
+    qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    state.level = btn.dataset.level;
+    render();
+  });
+
+  render();
+}
+
+/* ---------- TEDDY: aviso sutil tras un rato sin interactuar ---------- */
+function initTeddyAttract() {
+  var launcher = $('teddyLauncher'), panel = $('teddyPanel');
+  if (!launcher || !panel) return;
+  var timer = setTimeout(function() {
+    if (!panel.classList.contains('is-open')) launcher.classList.add('teddy-attract');
+  }, 20000);
+  launcher.addEventListener('click', function() {
+    clearTimeout(timer);
+    launcher.classList.remove('teddy-attract');
   });
 }
 
@@ -838,6 +906,8 @@ async function loadAdminTab(tabName) {
   initTelemedicina();
   initRewards();
   initClaims();
+  initLandingCalculator();
+  initTeddyAttract();
   // Always bind forms even before Supabase loads
   initLoginForm();
   // Async session load
