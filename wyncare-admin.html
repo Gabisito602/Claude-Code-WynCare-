@@ -204,6 +204,16 @@ table.data tbody tr:hover{background:var(--surface-2)}
 .toast.is-shown{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast svg{width:16px;height:16px;color:var(--gold);flex:none}
 
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.modal-overlay.is-open{opacity:1;pointer-events:auto}
+.modal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-2);padding:1.4rem;width:100%;max-width:400px;transform:translateY(10px);transition:transform .2s ease}
+.modal-overlay.is-open .modal-card{transform:translateY(0)}
+.modal-card .field{margin-top:1.1rem}
+.modal-card label{display:block;font-size:.72rem;font-weight:700;color:var(--text-2);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.modal-card select,.modal-card input[type="text"],.modal-card input[type="file"]{width:100%;padding:.6rem .75rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text-1);font-size:.86rem}
+.modal-actions{display:flex;gap:.6rem;margin-top:1.5rem}
+.modal-actions .btn{flex:1}
+
 
 
 /* Mobile sidebar drawer + responsive */
@@ -318,6 +328,7 @@ table.data tbody tr:hover{background:var(--surface-2)}
 <symbol id="i-check" viewBox="0 0 24 24"><polyline points="5 13 10 18 19 7"/></symbol>
 <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 21 20 3 20z"/><line x1="12" y1="9" x2="12" y2="13.5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/></symbol>
 <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3c2.8 2.4 4.3 5.6 4.3 9s-1.5 6.6-4.3 9c-2.8-2.4-4.3-5.6-4.3-9S9.2 5.4 12 3z"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
 </defs>
 </svg>
 
@@ -625,6 +636,28 @@ function showToast(msg){
   toastTimer = setTimeout(function(){ toastEl.classList.remove('is-shown'); }, 3200);
 }
 
+/* ---------- MODAL GENÉRICO ---------- */
+// Todavía sin Supabase: guarda los cambios solo en memoria (cfg.rows) para
+// poder validar el flujo completo; al conectar el backend esto pasa a ser
+// un update/insert real + subida a Storage.
+function openModal(innerHtml){
+  var overlay = document.getElementById('modalOverlay');
+  if (!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'modalOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal-card" id="modalCard"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeModal(); });
+  }
+  document.getElementById('modalCard').innerHTML = innerHtml;
+  overlay.classList.add('is-open');
+}
+function closeModal(){
+  var overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.classList.remove('is-open');
+}
+
 /* ---------- LOGIN GATE ---------- */
 var currentRole = 'Admin';
 document.getElementById('gateForm').addEventListener('submit', function(e){
@@ -712,9 +745,9 @@ document.querySelectorAll('.subtab').forEach(function(btn){
 
 /* ---------- BADGE TONES ---------- */
 var TONE_MAP = {
-  'Activo':'success','Activa':'success','Verificado':'success','Convertido':'success','Resuelto':'success','Sí':'success','Liquidada':'success',
-  'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Contactado':'warning',
-  'Cancelada':'danger','Descartado':'danger','Inactivo':'danger','De baja':'danger','No':'danger',
+  'Activo':'success','Activa':'success','Verificado':'success','Resuelto':'success','Sí':'success','Liquidada':'success','Validado':'success',
+  'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Pendiente documentación':'warning','Verificación':'warning',
+  'Cancelada':'danger','Inactivo':'danger','De baja':'danger','No':'danger','Rechazado':'danger',
   'Pausado':'neutral',
   'Admin':'gold','Oro':'gold','Platino':'gold'
 };
@@ -746,21 +779,74 @@ function mountTable(containerId, cfg){
       return cfg.columns.some(function(c){ return String(r[c.key]||'').toLowerCase().indexOf(q) > -1; });
     });
     tbody.innerHTML = rows.map(function(r){
+      var idx = cfg.rows.indexOf(r);
       var tds = cfg.columns.map(function(c){
         var val = r[c.key];
         var content = c.badge ? badgeHtml(val) : (c.mono ? '<span class="mono">'+esc(val)+'</span>' : esc(val));
         return '<td'+(c.align==='right'?' class="al-right"':'')+'>'+content+'</td>';
       }).join('');
-      tds += '<td class="al-right"><span class="row-actions"><button class="btn-icon" data-row-edit><svg class="icon"><use href="#i-pencil"/></svg></button><button class="btn-icon" data-row-del><svg class="icon"><use href="#i-trash"/></svg></button></span></td>';
+      var manageBtn = cfg.manageAction ? '<button class="btn-icon" data-row-manage="'+idx+'" title="'+esc(cfg.manageAction.label)+'"><svg class="icon"><use href="#i-upload"/></svg></button>' : '';
+      tds += '<td class="al-right"><span class="row-actions">'+manageBtn+'<button class="btn-icon" data-row-edit><svg class="icon"><use href="#i-pencil"/></svg></button><button class="btn-icon" data-row-del><svg class="icon"><use href="#i-trash"/></svg></button></span></td>';
       return '<tr>'+tds+'</tr>';
     }).join('');
     document.getElementById(uid+'-empty').style.display = rows.length ? 'none' : 'block';
   }
   renderRows('');
-  el.querySelector('[data-search="'+uid+'"]').addEventListener('input', function(e){ renderRows(e.target.value); });
+  var searchInput = el.querySelector('[data-search="'+uid+'"]');
+  searchInput.addEventListener('input', function(e){ renderRows(e.target.value); });
   el.querySelector('[data-add="'+uid+'"]').addEventListener('click', function(){ showToast('Esta acción se activará al conectar Supabase.'); });
   el.addEventListener('click', function(e){
+    var manageBtn = e.target.closest('[data-row-manage]');
+    if (manageBtn && cfg.manageAction){
+      var idx = parseInt(manageBtn.getAttribute('data-row-manage'), 10);
+      openManageModal(cfg, idx, function(){ renderRows(searchInput.value); });
+      return;
+    }
     if (e.target.closest('[data-row-edit]') || e.target.closest('[data-row-del]')) showToast('Esta acción se activará al conectar Supabase.');
+  });
+}
+
+/* ---------- GESTIÓN: cambio de estado + subida de documento ---------- */
+function openManageModal(cfg, idx, onSaved){
+  var row = cfg.rows[idx];
+  var ma = cfg.manageAction;
+  var statusHtml = ma.statusOptions ? (
+    '<div class="field"><label>Estado</label><select id="modalStatus">' +
+      ma.statusOptions.map(function(s){ return '<option value="'+esc(s)+'"'+(s === row.estado ? ' selected' : '')+'>'+esc(s)+'</option>'; }).join('') +
+    '</select></div>'
+  ) : '';
+  var reasonHtml = ma.statusOptions ? (
+    '<div class="field" id="modalReasonField" style="display:'+(row.estado === 'Rechazado' ? '' : 'none')+'">' +
+      '<label>Motivo del rechazo</label><input type="text" id="modalReason" value="'+esc(row.motivo || '')+'" placeholder="Ej: Falta el CIF de la empresa">' +
+    '</div>'
+  ) : '';
+  var fileHtml =
+    '<div class="field"><label>'+esc(ma.fileLabel)+'</label><input type="file" id="modalFile" accept="application/pdf">' +
+    (row.documento ? '<p style="font-size:.78rem;color:var(--text-3);margin-top:.4rem">Archivo actual: '+esc(row.documento)+'</p>' : '') +
+    '</div>';
+
+  openModal(
+    '<h3>'+esc(ma.label)+'</h3><p style="font-size:.8rem;color:var(--text-3);margin-top:.2rem">'+esc(row.ref || row.cliente || '')+'</p>' +
+    statusHtml + reasonHtml + fileHtml +
+    '<div class="modal-actions"><button class="btn btn-ghost" id="modalCancel" type="button">Cancelar</button><button class="btn btn-primary" id="modalSave" type="button">Guardar</button></div>'
+  );
+
+  var statusSel = document.getElementById('modalStatus');
+  if (statusSel) statusSel.addEventListener('change', function(){
+    var reasonField = document.getElementById('modalReasonField');
+    if (reasonField) reasonField.style.display = (statusSel.value === 'Rechazado') ? '' : 'none';
+  });
+
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalSave').addEventListener('click', function(){
+    if (statusSel) row.estado = statusSel.value;
+    var reasonInput = document.getElementById('modalReason');
+    if (reasonInput) row.motivo = reasonInput.value;
+    var fileInput = document.getElementById('modalFile');
+    if (fileInput && fileInput.files && fileInput.files[0]) row.documento = fileInput.files[0].name;
+    closeModal();
+    onSaved();
+    showToast('Guardado localmente. Esto quedará permanente al conectar Supabase.');
   });
 }
 
@@ -795,8 +881,9 @@ var D = {
     title:'Pólizas', addLabel:'Nueva póliza',
     stats:[['892','pólizas activas'],['441','nuevas (6 meses)'],['12','pendientes']],
     columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'aseguradora',label:'Aseguradora'},{key:'prima',label:'Prima',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'renovacion',label:'Renovación',align:'right'}],
+    manageAction:{label:'Subir documento', fileLabel:'Documento de la póliza (PDF)'},
     rows:[
-      {ref:'WC-2024-001',cliente:'Ana García',tipo:'Coche',aseguradora:'AXA',prima:'35€',estado:'Activa',renovacion:'12/03/2027'},
+      {ref:'WC-2024-001',cliente:'Ana García',tipo:'Coche',aseguradora:'AXA',prima:'35€',estado:'Activa',renovacion:'12/03/2027',documento:'Poliza_Coche_AnaGarcia.pdf'},
       {ref:'WC-2024-002',cliente:'Ana García',tipo:'Hogar',aseguradora:'Mapfre',prima:'22€',estado:'Activa',renovacion:'12/03/2027'},
       {ref:'WC-2024-003',cliente:'Ana García',tipo:'Salud',aseguradora:'Sanitas',prima:'45€',estado:'Activa',renovacion:'12/03/2027'},
       {ref:'WC-2024-004',cliente:'Ana García',tipo:'Vida',aseguradora:'Allianz',prima:'18€',estado:'Pendiente',renovacion:'—'},
@@ -806,15 +893,16 @@ var D = {
   },
   presupuestos:{
     title:'Presupuestos', addLabel:'Nuevo presupuesto',
-    stats:[['340','creados'],['210','contactados'],['28%','conversión']],
+    stats:[['340','creados'],['54','pendientes de validar'],['81%','tasa de validación']],
     columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente / contacto'},{key:'tipo',label:'Tipo'},{key:'precio',label:'Precio est.',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    manageAction:{label:'Gestionar presupuesto', fileLabel:'Presupuesto validado (PDF)', statusOptions:['Pendiente documentación','Verificación','Validado','Rechazado']},
     rows:[
-      {ref:'PR-88231',cliente:'Pol Vidal',tipo:'Hogar',precio:'24€',estado:'Nuevo',fecha:'Hoy'},
-      {ref:'PR-88230',cliente:'marina@mail.com',tipo:'Salud',precio:'47€',estado:'Nuevo',fecha:'Hoy'},
-      {ref:'PR-88225',cliente:'Jordi Camps',tipo:'Vida',precio:'15€',estado:'Contactado',fecha:'Ayer'},
-      {ref:'PR-88219',cliente:'toni@mail.com',tipo:'Coche',precio:'33€',estado:'Convertido',fecha:'Hace 3 días'},
-      {ref:'PR-88201',cliente:'Núria Soler',tipo:'Empresa',precio:'95€',estado:'Descartado',fecha:'Hace 5 días'},
-      {ref:'PR-88190',cliente:'elena@mail.com',tipo:'Telemedicina',precio:'9€',estado:'Convertido',fecha:'Hace 1 semana'}
+      {ref:'PR-88231',cliente:'Pol Vidal',tipo:'Hogar',precio:'24€',estado:'Pendiente documentación',fecha:'Hoy'},
+      {ref:'PR-88230',cliente:'marina@mail.com',tipo:'Salud',precio:'47€',estado:'Pendiente documentación',fecha:'Hoy'},
+      {ref:'PR-88225',cliente:'Jordi Camps',tipo:'Vida',precio:'15€',estado:'Verificación',fecha:'Ayer'},
+      {ref:'PR-88219',cliente:'toni@mail.com',tipo:'Coche',precio:'33€',estado:'Validado',fecha:'Hace 3 días',documento:'Presupuesto_Coche_Toni.pdf'},
+      {ref:'PR-88201',cliente:'Núria Soler',tipo:'Empresa',precio:'95€',estado:'Rechazado',motivo:'Falta el CIF de la empresa',fecha:'Hace 5 días'},
+      {ref:'PR-88190',cliente:'elena@mail.com',tipo:'Telemedicina',precio:'9€',estado:'Validado',fecha:'Hace 1 semana',documento:'Presupuesto_Telemedicina_Elena.pdf'}
     ]
   },
   aseguradoras:{

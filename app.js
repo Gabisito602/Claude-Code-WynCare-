@@ -56,8 +56,82 @@ const sb = (window.supabase && window.supabase.createClient)
 let currentUser = null;
 let currentProfile = null;
 let currentPolicies = [];
+let currentPolicyDocuments = [];
 let selectedQuote = { name: 'Coche', price: 35, pts: 700, cov: 'Cobertura completa coche' };
 let quoteCalcWidget = null;
+
+/* ---------- PRESUPUESTOS: estados del ciclo de validación ---------- */
+// pending_docs -> in_review -> validated (o, en cualquier momento, rejected).
+// El admin sube el PDF final y cambia el estado desde el panel; document_url
+// y rejection_reason todavía no existen en la tabla "quotes" real — llegan
+// con supabase/02_quotes_status_and_documents.sql cuando retomemos Supabase.
+const QUOTE_STATUS_STEPS = ['pending_docs', 'in_review', 'validated'];
+const QUOTE_STATUS_LABELS = { pending_docs: 'Documentación', in_review: 'Verificación', validated: 'Validado' };
+
+function renderQuoteStatus(status) {
+  if (status === 'rejected') return null;
+  var idx = QUOTE_STATUS_STEPS.indexOf(status);
+  if (idx < 0) idx = 0;
+  return '<div class="tier-track quote-track">' + QUOTE_STATUS_STEPS.map(function(key, i) {
+    var cls = i < idx ? 'done' : (i === idx ? 'done current' : '');
+    var dot = i < idx ? '<svg class="icon" style="width:13px;height:13px"><use href="#i-check"/></svg>' : String(i + 1);
+    return '<div class="tier-step ' + cls + '"><div class="tier-dot">' + dot + '</div><div class="tn">' + QUOTE_STATUS_LABELS[key] + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function renderQuoteCard(q) {
+  var icon = getPolicyIcon(q.quote_type);
+  var dateLabel = q.created_at ? new Date(q.created_at).toLocaleDateString('es-ES') : '';
+  var body;
+  if (q.status === 'rejected') {
+    body = '<div class="quote-rejected"><svg class="icon"><use href="#i-alert"/></svg><span>' +
+      esc(q.rejection_reason || 'Presupuesto rechazado. Contacta con soporte para más información.') + '</span></div>';
+  } else {
+    body = renderQuoteStatus(q.status);
+    if (q.status === 'validated') {
+      body += '<div class="quote-card-foot">' + (q.document_url
+        ? '<a class="btn btn-primary btn-block" href="' + esc(q.document_url) + '" target="_blank" rel="noopener">Descargar presupuesto</a>'
+        : '<p class="quote-doc-pending">Documento en preparación — te avisaremos en cuanto esté listo.</p>') + '</div>';
+    }
+  }
+  return '<div class="quote-card"><div class="quote-card-head"><span class="ic"><svg class="icon"><use href="#' + icon + '"/></svg></span>' +
+    '<div class="info"><div class="nm">' + esc(q.quote_type || 'Seguro') + '</div><div class="ref">' + esc(q.reference || '') + (dateLabel ? ' · ' + dateLabel : '') + '</div></div>' +
+    '<div class="pr">' + formatCurrency(parseFloat(q.premium || 0)) + '€/mes</div></div>' + body + '</div>';
+}
+
+async function updateQuotesList() {
+  var panel = $('quotesList');
+  if (!panel || !currentUser) return;
+  var emptyHtml = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todavía no has guardado ningún presupuesto. Usa "Nueva cotización" para pedir el primero.</p></div>';
+  try {
+    var { data, error } = await sb.from('quotes').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    if (error) throw error;
+    var quotes = data || [];
+    panel.innerHTML = quotes.length ? quotes.map(renderQuoteCard).join('') : emptyHtml;
+  } catch (err) {
+    panel.innerHTML = emptyHtml;
+  }
+}
+
+function initQuotesViewToggle() {
+  var toggle = $('quotesViewToggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', function(e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    qsa('button', toggle).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    var isMis = btn.dataset.view === 'mis';
+    $('quotesNewView').style.display = isMis ? 'none' : '';
+    $('quotesListView').style.display = isMis ? '' : 'none';
+    if (isMis) updateQuotesList();
+  });
+  var viewMyQuotesBtn = $('viewMyQuotesBtn');
+  if (viewMyQuotesBtn) viewMyQuotesBtn.addEventListener('click', function() {
+    var misBtn = toggle.querySelector('[data-view="mis"]');
+    if (misBtn) misBtn.click();
+  });
+}
 
 /* ---------- CALCULADORA: preguntas y precios por tipo de seguro ---------- */
 // Precios y puntos "base" (nivel Estándar, primera opción de cada pregunta).
@@ -413,6 +487,18 @@ async function loadUserData() {
   } catch (err) {
     currentProfile = { full_name: currentUser.email?.split('@')[0] || 'Usuario' };
   }
+  try {
+    const policyIds = currentPolicies.map(p => p.id).filter(Boolean);
+    if (policyIds.length) {
+      const { data: docs, error } = await sb.from('policy_documents').select('*').in('policy_id', policyIds);
+      if (error) throw error;
+      currentPolicyDocuments = docs || [];
+    } else {
+      currentPolicyDocuments = [];
+    }
+  } catch (err) {
+    currentPolicyDocuments = [];
+  }
   updateSidebar();
   updateDashboard();
   updatePoliciesTab();
@@ -420,6 +506,7 @@ async function loadUserData() {
   updateSettings();
   updateClaimsTab();
   updateDocumentsTab();
+  updateQuotesList();
 }
 
 /* ---------- DASHBOARD ---------- */
@@ -481,7 +568,9 @@ function updatePoliciesTab() {
   } else {
     container.innerHTML = currentPolicies.map(p => {
       const a = (p.status === 'active' || p.status === 'Activo');
-      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span><a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>';
+      const doc = currentPolicyDocuments.find(d => d.policy_id === p.id);
+      const dlLink = doc ? '<a class="doc-link" href="' + esc(doc.url) + '" target="_blank" rel="noopener">Descargar póliza</a>' : '';
+      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span>' + dlLink + '<a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>';
     }).join('');
   }
 }
@@ -570,7 +659,7 @@ async function saveQuote() {
     var ref = 'WC-' + Date.now().toString(36).toUpperCase();
     var { error } = await sb.from('quotes').insert({
       user_id: currentUser.id, quote_type: selectedQuote.name, premium: selectedQuote.price,
-      coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts, reference: ref, status: 'pending', created_at: new Date().toISOString()
+      coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts, reference: ref, status: 'pending_docs', created_at: new Date().toISOString()
     });
     if (error) throw error;
     $('successRef').textContent = ref;
@@ -579,6 +668,7 @@ async function saveQuote() {
     btn.style.display = 'none';
     $('prevRef').textContent = '\u2714 Cotizaci\u00f3n guardada';
     $('prevRef').style.display = 'block';
+    updateQuotesList();
   } catch (err) { alert('Error al guardar: ' + err.message); }
   btn.disabled = false; btn.textContent = 'Guardar cotizaci\u00f3n';
 }
@@ -663,27 +753,21 @@ async function updateClaimsTab() {
 }
 
 /* ---------- DOCUMENTOS ---------- */
-async function updateDocumentsTab() {
+// currentPolicyDocuments ya se carga una sola vez en loadUserData() (lo
+// reutiliza tambi\u00e9n updatePoliciesTab() para el enlace "Descargar p\u00f3liza").
+function updateDocumentsTab() {
   var panel = $('documentsListPanel');
   if (!panel || !currentUser) return;
   var emptyHtml = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todav\u00eda no hay documentos disponibles. Te avisaremos por email en cuanto lo est\u00e9n.</p></div>';
-  if (currentPolicies.length === 0) { panel.innerHTML = emptyHtml; return; }
-  try {
-    var policyIds = currentPolicies.map(function(p) { return p.id; }).filter(Boolean);
-    var { data, error } = await sb.from('policy_documents').select('*').in('policy_id', policyIds).order('created_at', { ascending: false });
-    if (error) throw error;
-    var docs = data || [];
-    if (docs.length === 0) { panel.innerHTML = emptyHtml; return; }
-    var policyById = {};
-    currentPolicies.forEach(function(p) { policyById[p.id] = p; });
-    panel.innerHTML = docs.map(function(d) {
-      var policy = policyById[d.policy_id];
-      var policyLabel = policy ? (policy.type || policy.policy_type || 'Seguro') + ' \u00b7 ' + (policy.reference || '') : '';
-      return '<div class="doc-row"><span class="ic"><svg class="icon"><use href="#i-doc"/></svg></span><div class="info"><div class="nm">' + esc(d.name || 'Documento') + '</div><div class="meta">' + esc(policyLabel) + '</div></div><a class="dl" href="' + esc(d.url || '#') + '" target="_blank" rel="noopener">Descargar</a></div>';
-    }).join('');
-  } catch (err) {
-    panel.innerHTML = emptyHtml;
-  }
+  var docs = currentPolicyDocuments.slice().sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+  if (docs.length === 0) { panel.innerHTML = emptyHtml; return; }
+  var policyById = {};
+  currentPolicies.forEach(function(p) { policyById[p.id] = p; });
+  panel.innerHTML = docs.map(function(d) {
+    var policy = policyById[d.policy_id];
+    var policyLabel = policy ? (policy.type || policy.policy_type || 'Seguro') + ' \u00b7 ' + (policy.reference || '') : '';
+    return '<div class="doc-row"><span class="ic"><svg class="icon"><use href="#i-doc"/></svg></span><div class="info"><div class="nm">' + esc(d.name || 'Documento') + '</div><div class="meta">' + esc(policyLabel) + '</div></div><a class="dl" href="' + esc(d.url || '#') + '" target="_blank" rel="noopener">Descargar</a></div>';
+  }).join('');
 }
 
 /* ---------- FORMS ---------- */
@@ -1077,6 +1161,7 @@ async function loadAdminTab(tabName) {
 (function init() {
   setTheme(getTheme());
   initQuoteSelector();
+  initQuotesViewToggle();
   initTelemedicina();
   initRewards();
   initClaims();
