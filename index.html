@@ -180,9 +180,16 @@ em.accent{font-style:normal;color:var(--gold)}
 .calc-levels{display:flex;gap:.4rem}
 .calc-level{flex:1;padding:.6rem .5rem;border-radius:var(--radius-full);border:1.5px solid var(--border-strong);font-size:.82rem;font-weight:600;color:var(--text-2);text-align:center;transition:background .15s ease,border-color .15s ease,color .15s ease}
 .calc-level[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--gold-ink)}
+.calc-field-label{font-size:.76rem;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.55rem}
+.calc-qopts{display:flex;gap:.4rem;flex-wrap:wrap}
+.calc-qopts .calc-level{flex:none;padding:.55rem 1rem}
+.calc-questions{display:flex;flex-direction:column;gap:1rem}
+.quote-form > .calc-questions,.quote-form > .calc-field{margin-top:1rem}
 .calc-result{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
 .calc-price{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--gold)}
-.calc-price small{font-size:1rem;color:var(--text-3);font-weight:400;margin-left:.3rem}
+.calc-price small{font-size:1rem;color:var(--text-3);font-weight:400}
+.calc-price small:first-child{margin-right:.35rem}
+.calc-price small:last-child{margin-left:.3rem}
 .calc-pts{font-size:.86rem;color:var(--text-2)}
 .calc-legal{font-size:.72rem;color:var(--text-3);text-align:center;margin-top:-.4rem}
 @media (max-width:640px){.calc-types.type-grid{grid-template-columns:repeat(3,1fr)}}
@@ -779,7 +786,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         <div class="section-head center reveal">
           <span class="eyebrow">Calculadora</span>
           <h2>Calcula tu seguro en 30 segundos</h2>
-          <p>Sin registrarte. Elige qué quieres proteger y ajusta el nivel de cobertura.</p>
+          <p>Sin registrarte. Elige qué quieres proteger, responde un par de preguntas y ajusta la cobertura.</p>
         </div>
         <div class="calc-card reveal">
           <div class="type-grid calc-types" id="calcTypes">
@@ -791,17 +798,21 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
             <button class="type-card" type="button" data-type="Telemedicina" aria-pressed="false"><svg><use href="#i-pulse"/></svg><span class="tn">Telemedicina</span></button>
           </div>
           <div class="calc-body">
-            <div class="calc-levels" id="calcLevels">
-              <button class="calc-level" type="button" data-level="Básica" aria-pressed="false">Básica</button>
-              <button class="calc-level" type="button" data-level="Estándar" aria-pressed="true">Estándar</button>
-              <button class="calc-level" type="button" data-level="Completa" aria-pressed="false">Completa</button>
+            <div class="calc-questions" id="calcQuestions"></div>
+            <div class="calc-field">
+              <div class="calc-field-label">Nivel de cobertura</div>
+              <div class="calc-levels" id="calcLevels">
+                <button class="calc-level" type="button" data-level="Básica" aria-pressed="false">Básica</button>
+                <button class="calc-level" type="button" data-level="Estándar" aria-pressed="true">Estándar</button>
+                <button class="calc-level" type="button" data-level="Completa" aria-pressed="false">Completa</button>
+              </div>
             </div>
             <div class="calc-result">
-              <div class="calc-price"><span id="calcPrice">35,00€</span><small>/mes</small></div>
+              <div class="calc-price"><small>Desde</small><span id="calcPrice">35,00€</span><small>/mes</small></div>
               <div class="calc-pts">+<span id="calcPts">700</span> WynPoints al activarlo</div>
             </div>
-            <a class="btn btn-primary btn-block" href="#/registro" id="calcCta">Crear cuenta y contratar <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
-            <p class="calc-legal">*Precio orientativo hasta validación por la aseguradora.</p>
+            <a class="btn btn-primary btn-block" href="#/registro" id="calcCta">Crear cuenta y calcular mi precio exacto <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
+            <p class="calc-legal">*Precio orientativo según tus respuestas. Al crear tu cuenta calculamos y validamos tu presupuesto real con la aseguradora.</p>
           </div>
         </div>
       </div>
@@ -1436,22 +1447,31 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 
     <!-- PRESUPUESTOS -->
     <div class="app-tab" id="tab-presupuestos">
-      <div class="app-topbar"><div class="app-title"><h2>Cotizar seguro</h2><p>¿Qué tipo de seguro necesitas?</p></div></div>
+      <div class="app-topbar"><div class="app-title"><h2>Cotizar seguro</h2><p>Elige el tipo, responde un par de preguntas y ajusta la cobertura.</p></div></div>
       <div class="quote-grid">
-        <div>
+        <div class="quote-form">
           <div class="type-grid" id="typeGrid">
-            <button class="type-card" type="button" data-name="Coche" data-price="35" data-pts="700" data-cov="Cobertura completa coche" aria-pressed="true"><svg><use href="#i-car"/></svg><span class="tn">Coche</span><span class="tp">Desde 35€/mes</span></button>
-            <button class="type-card" type="button" data-name="Hogar" data-price="22" data-pts="600" data-cov="Cobertura completa hogar" aria-pressed="false"><svg><use href="#i-home"/></svg><span class="tn">Hogar</span><span class="tp">Desde 22€/mes</span></button>
-            <button class="type-card" type="button" data-name="Salud" data-price="45" data-pts="1500" data-cov="Cobertura completa salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span><span class="tp">Desde 45€/mes</span></button>
-            <button class="type-card" type="button" data-name="Vida" data-price="15" data-pts="2500" data-cov="Cobertura completa vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span><span class="tp">Desde 15€/mes</span></button>
-            <button class="type-card" type="button" data-name="Empresa" data-price="80" data-pts="3500" data-cov="Cobertura completa empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span><span class="tp">Desde 80€/mes</span></button>
-            <button class="type-card" type="button" data-name="Telemedicina" data-price="9" data-pts="0" data-cov="Acceso a videoconsultas" aria-pressed="false"><svg><use href="#i-pulse"/></svg><span class="tn">Telemedicina</span><span class="tp">Desde 9€/mes</span></button>
+            <button class="type-card" type="button" data-name="Coche" aria-pressed="true"><svg><use href="#i-car"/></svg><span class="tn">Coche</span><span class="tp">Desde 35€/mes</span></button>
+            <button class="type-card" type="button" data-name="Hogar" aria-pressed="false"><svg><use href="#i-home"/></svg><span class="tn">Hogar</span><span class="tp">Desde 22€/mes</span></button>
+            <button class="type-card" type="button" data-name="Salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span><span class="tp">Desde 45€/mes</span></button>
+            <button class="type-card" type="button" data-name="Vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span><span class="tp">Desde 15€/mes</span></button>
+            <button class="type-card" type="button" data-name="Empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span><span class="tp">Desde 80€/mes</span></button>
+            <button class="type-card" type="button" data-name="Telemedicina" aria-pressed="false"><svg><use href="#i-pulse"/></svg><span class="tn">Telemedicina</span><span class="tp">Desde 9€/mes</span></button>
+          </div>
+          <div class="calc-questions" id="quoteQuestions"></div>
+          <div class="calc-field">
+            <div class="calc-field-label">Nivel de cobertura</div>
+            <div class="calc-levels" id="quoteLevels">
+              <button class="calc-level" type="button" data-level="Básica" aria-pressed="false">Básica</button>
+              <button class="calc-level" type="button" data-level="Estándar" aria-pressed="true">Estándar</button>
+              <button class="calc-level" type="button" data-level="Completa" aria-pressed="false">Completa</button>
+            </div>
           </div>
         </div>
         <div>
           <div class="preview-card">
             <div class="preview-label">Precio estimado</div>
-            <div class="preview-price"><span id="prevPrice">35,00€</span> <small>/mes</small></div>
+            <div class="preview-price"><small>Desde</small> <span id="prevPrice">35,00€</span> <small>/mes</small></div>
             <div class="preview-specs">
               <div><span>Seguro</span><strong id="prevName">Coche</strong></div>
               <div><span>Cobertura</span><strong id="prevCov">Cobertura completa coche</strong></div>

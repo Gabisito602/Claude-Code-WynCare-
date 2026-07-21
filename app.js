@@ -57,6 +57,195 @@ let currentUser = null;
 let currentProfile = null;
 let currentPolicies = [];
 let selectedQuote = { name: 'Coche', price: 35, pts: 700, cov: 'Cobertura completa coche' };
+let quoteCalcWidget = null;
+
+/* ---------- CALCULADORA: preguntas y precios por tipo de seguro ---------- */
+// Precios y puntos "base" (nivel Estándar, primera opción de cada pregunta).
+// El precio final es orientativo: base x nivel x cada respuesta. La aseguradora
+// valida el precio real una vez el cliente crea su cuenta y envía la cotización.
+const CALC_TYPES = {
+  Coche: { cov: 'Cobertura completa coche', base: 35, pts: 700, questions: [
+    { key: 'antiguedad', label: 'Antigüedad del vehículo', options: [
+      { label: 'Nuevo (0-3 años)', mult: 1 },
+      { label: '4-8 años', mult: 0.95 },
+      { label: '+8 años', mult: 0.85 }
+    ]},
+    { key: 'uso', label: 'Uso principal', options: [
+      { label: 'Particular', mult: 1 },
+      { label: 'Profesional (VTC, reparto...)', mult: 1.35 }
+    ]}
+  ]},
+  Hogar: { cov: 'Cobertura completa hogar', base: 22, pts: 600, questions: [
+    { key: 'vivienda', label: 'Tipo de vivienda', options: [
+      { label: 'Piso', mult: 1 },
+      { label: 'Casa / chalet', mult: 1.25 }
+    ]},
+    { key: 'regimen', label: 'Régimen', options: [
+      { label: 'Propietario', mult: 1 },
+      { label: 'Inquilino', mult: 0.85 }
+    ]}
+  ]},
+  Salud: { cov: 'Cobertura completa salud', base: 45, pts: 1500, questions: [
+    { key: 'asegurados', label: 'Personas a asegurar', options: [
+      { label: 'Solo yo', mult: 1 },
+      { label: 'Pareja', mult: 1.7 },
+      { label: 'Familia (3+)', mult: 2.6 }
+    ]},
+    { key: 'edad', label: 'Edad del titular', options: [
+      { label: 'Hasta 35', mult: 1 },
+      { label: '36-55', mult: 1.15 },
+      { label: '+55', mult: 1.45 }
+    ]}
+  ]},
+  Vida: { cov: 'Cobertura completa vida', base: 15, pts: 2500, questions: [
+    { key: 'capital', label: 'Capital asegurado', options: [
+      { label: '50.000€', mult: 1 },
+      { label: '100.000€', mult: 1.6 },
+      { label: '+200.000€', mult: 2.4 }
+    ]},
+    { key: 'fumador', label: '¿Fumador?', options: [
+      { label: 'No', mult: 1 },
+      { label: 'Sí', mult: 1.4 }
+    ]}
+  ]},
+  Empresa: { cov: 'Cobertura completa empresa', base: 80, pts: 3500, questions: [
+    { key: 'empleados', label: 'Nº de empleados', options: [
+      { label: '1-5', mult: 1 },
+      { label: '6-20', mult: 1.8 },
+      { label: '+20', mult: 3 }
+    ]},
+    { key: 'sector', label: 'Sector', options: [
+      { label: 'Oficina / servicios', mult: 1 },
+      { label: 'Comercio / industrial', mult: 1.3 }
+    ]}
+  ]},
+  Telemedicina: { cov: 'Acceso a videoconsultas', base: 9, pts: 0, questions: [
+    { key: 'cobertura', label: 'Cobertura', options: [
+      { label: 'Individual', mult: 1 },
+      { label: 'Familiar (hasta 4)', mult: 1.8 }
+    ]},
+    { key: 'uso', label: 'Uso esperado', options: [
+      { label: 'Ocasional', mult: 1 },
+      { label: 'Frecuente', mult: 1.2 }
+    ]}
+  ]}
+};
+const CALC_LEVEL_MULT = { 'Básica': 0.8, 'Estándar': 1, 'Completa': 1.3 };
+
+// Motor compartido por la calculadora de la landing y "Cotizar seguro" del
+// Área Cliente: mismo tipo, mismas preguntas, mismo cálculo de precio — así
+// lo que el visitante rellena sin cuenta se traslada tal cual al presupuesto
+// que sí queda guardado y pendiente de validación.
+function initCalcWidget(opts) {
+  var typesEl = opts.typesEl, questionsEl = opts.questionsEl, levelsEl = opts.levelsEl;
+  if (!typesEl || !questionsEl || !levelsEl) return null;
+
+  function defaultAnswers(type) {
+    var a = {};
+    CALC_TYPES[type].questions.forEach(function(q) { a[q.key] = { label: q.options[0].label, mult: q.options[0].mult }; });
+    return a;
+  }
+
+  var state = { type: 'Coche', level: 'Estándar', answers: defaultAnswers('Coche') };
+
+  function renderQuestions() {
+    var cfg = CALC_TYPES[state.type];
+    questionsEl.innerHTML = cfg.questions.map(function(q) {
+      var opts = q.options.map(function(o) {
+        var pressed = state.answers[q.key].label === o.label;
+        return '<button class="calc-level" type="button" data-mult="' + o.mult + '" aria-pressed="' + pressed + '">' + esc(o.label) + '</button>';
+      }).join('');
+      return '<div class="calc-field"><div class="calc-field-label">' + esc(q.label) + '</div><div class="calc-qopts" data-qkey="' + q.key + '">' + opts + '</div></div>';
+    }).join('');
+  }
+
+  function totalMult() {
+    var m = CALC_LEVEL_MULT[state.level];
+    Object.keys(state.answers).forEach(function(k) { m *= state.answers[k].mult; });
+    return m;
+  }
+
+  function render() {
+    var cfg = CALC_TYPES[state.type];
+    var mult = totalMult();
+    var price = cfg.base * mult;
+    var pts = Math.round(cfg.pts * mult);
+    opts.priceEl.textContent = formatCurrency(price) + '€';
+    if (opts.ptsEl) opts.ptsEl.textContent = pts.toLocaleString();
+    var detail = cfg.questions.map(function(q) { return state.answers[q.key].label; }).join(' · ');
+    if (opts.onChange) opts.onChange({
+      type: state.type, level: state.level, answers: state.answers, price: price, pts: pts,
+      cov: cfg.cov, covDetailed: cfg.cov + ' · Nivel ' + state.level + ' · ' + detail
+    });
+  }
+
+  typesEl.addEventListener('click', function(e) {
+    var btn = e.target.closest('.type-card');
+    if (!btn) return;
+    var name = btn.dataset.type || btn.dataset.name;
+    if (!CALC_TYPES[name]) return;
+    qsa('.type-card', typesEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    state.type = name;
+    state.answers = defaultAnswers(name);
+    renderQuestions();
+    render();
+  });
+
+  levelsEl.addEventListener('click', function(e) {
+    var btn = e.target.closest('.calc-level');
+    if (!btn) return;
+    qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    state.level = btn.dataset.level;
+    render();
+  });
+
+  questionsEl.addEventListener('click', function(e) {
+    var btn = e.target.closest('.calc-level');
+    if (!btn) return;
+    var group = btn.closest('.calc-qopts');
+    if (!group) return;
+    qsa('.calc-level', group).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    state.answers[group.dataset.qkey] = { label: btn.textContent, mult: parseFloat(btn.dataset.mult) };
+    render();
+  });
+
+  renderQuestions();
+  render();
+
+  return {
+    setState: function(partial) {
+      if (partial.type && CALC_TYPES[partial.type]) {
+        state.type = partial.type;
+        state.answers = defaultAnswers(partial.type);
+        qsa('.type-card', typesEl).forEach(function(b) {
+          var n = b.dataset.type || b.dataset.name;
+          b.setAttribute('aria-pressed', n === partial.type ? 'true' : 'false');
+        });
+        renderQuestions();
+      }
+      if (partial.level && CALC_LEVEL_MULT[partial.level]) {
+        state.level = partial.level;
+        qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', b.dataset.level === partial.level ? 'true' : 'false'); });
+      }
+      if (partial.answers) {
+        Object.keys(partial.answers).forEach(function(k) {
+          if (state.answers.hasOwnProperty(k)) state.answers[k] = partial.answers[k];
+        });
+        qsa('.calc-qopts', questionsEl).forEach(function(group) {
+          var key = group.dataset.qkey;
+          if (!partial.answers.hasOwnProperty(key)) return;
+          qsa('.calc-level', group).forEach(function(b) {
+            b.setAttribute('aria-pressed', parseFloat(b.dataset.mult) === partial.answers[key].mult ? 'true' : 'false');
+          });
+        });
+      }
+      render();
+    }
+  };
+}
 
 /* ---------- UTILS ---------- */
 const $ = id => document.getElementById(id);
@@ -112,13 +301,11 @@ function showAppTab(id) {
 }
 
 function applyLandingQuoteHandoff() {
-  var grid = $('typeGrid');
-  if (!grid) return;
+  if (!quoteCalcWidget) return;
   try {
     var stored = JSON.parse(localStorage.getItem('wyncare_landing_quote') || 'null');
-    if (stored && stored.type) {
-      var match = grid.querySelector('.type-card[data-name="' + stored.type + '"]');
-      if (match) match.click();
+    if (stored && stored.type && CALC_TYPES[stored.type]) {
+      quoteCalcWidget.setState(stored);
       localStorage.removeItem('wyncare_landing_quote');
     }
   } catch (e) {}
@@ -335,64 +522,32 @@ function updateSettings() {
 
 /* ---------- QUOTES ---------- */
 function initQuoteSelector() {
-  const grid = $('typeGrid');
-  if (!grid) return;
-  grid.addEventListener('click', function(e) {
-    var card = e.target.closest('.type-card');
-    if (!card) return;
-    qsa('.type-card', grid).forEach(function(c) { c.setAttribute('aria-pressed', 'false'); });
-    card.setAttribute('aria-pressed', 'true');
-    selectedQuote = { name: card.dataset.name, price: parseFloat(card.dataset.price), pts: parseInt(card.dataset.pts), cov: card.dataset.cov };
-    $('prevPrice').textContent = formatCurrency(selectedQuote.price);
-    $('prevName').textContent = selectedQuote.name;
-    $('prevCov').textContent = selectedQuote.cov;
-    $('prevPts').textContent = '+ ' + selectedQuote.pts.toLocaleString() + ' WynPoints';
-    $('prevRef').style.display = 'none'; $('prevRef').textContent = '';
-    var successEl = $('successBlock');
-    if (successEl) successEl.classList.remove('is-shown');
-    $('saveQuoteBtn').style.display = '';
+  quoteCalcWidget = initCalcWidget({
+    typesEl: $('typeGrid'), questionsEl: $('quoteQuestions'), levelsEl: $('quoteLevels'),
+    priceEl: $('prevPrice'), ptsEl: null,
+    onChange: function(s) {
+      selectedQuote = { name: s.type, price: s.price, pts: s.pts, cov: s.covDetailed };
+      $('prevName').textContent = s.type;
+      $('prevCov').textContent = s.cov;
+      $('prevPts').textContent = '+ ' + s.pts.toLocaleString() + ' WynPoints';
+      $('prevRef').style.display = 'none'; $('prevRef').textContent = '';
+      var successEl = $('successBlock');
+      if (successEl) successEl.classList.remove('is-shown');
+      var saveBtn = $('saveQuoteBtn');
+      if (saveBtn) saveBtn.style.display = '';
+    }
   });
 }
 
 /* ---------- CALCULADORA (landing) ---------- */
 function initLandingCalculator() {
-  var typesEl = $('calcTypes'), levelsEl = $('calcLevels');
-  if (!typesEl || !levelsEl) return;
-
-  var CALC_PTS = { Coche: 700, Hogar: 600, Salud: 1500, Vida: 2500, Empresa: 3500, Telemedicina: 0 };
-  var CALC_PRICE = { Coche: 35, Hogar: 22, Salud: 45, Vida: 15, Empresa: 80, Telemedicina: 9 };
-  var CALC_MULT = { 'Básica': 0.8, 'Estándar': 1, 'Completa': 1.3 };
-  var state = { type: 'Coche', level: 'Estándar' };
-
-  function render() {
-    var price = CALC_PRICE[state.type] * CALC_MULT[state.level];
-    var pts = Math.round(CALC_PTS[state.type] * CALC_MULT[state.level]);
-    $('calcPrice').textContent = formatCurrency(price) + '€';
-    $('calcPts').textContent = pts.toLocaleString();
-    try {
-      localStorage.setItem('wyncare_landing_quote', JSON.stringify({ type: state.type, level: state.level, price: price, pts: pts }));
-    } catch (e) {}
-  }
-
-  typesEl.addEventListener('click', function(e) {
-    var btn = e.target.closest('.type-card');
-    if (!btn) return;
-    qsa('.type-card', typesEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
-    btn.setAttribute('aria-pressed', 'true');
-    state.type = btn.dataset.type;
-    render();
+  initCalcWidget({
+    typesEl: $('calcTypes'), questionsEl: $('calcQuestions'), levelsEl: $('calcLevels'),
+    priceEl: $('calcPrice'), ptsEl: $('calcPts'),
+    onChange: function(s) {
+      try { localStorage.setItem('wyncare_landing_quote', JSON.stringify(s)); } catch (e) {}
+    }
   });
-
-  levelsEl.addEventListener('click', function(e) {
-    var btn = e.target.closest('.calc-level');
-    if (!btn) return;
-    qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
-    btn.setAttribute('aria-pressed', 'true');
-    state.level = btn.dataset.level;
-    render();
-  });
-
-  render();
 }
 
 /* ---------- TEDDY: aviso sutil tras un rato sin interactuar ---------- */
