@@ -217,6 +217,8 @@ async function loadUserData() {
   updatePoliciesTab();
   updateWynpointsTab();
   updateSettings();
+  updateClaimsTab();
+  updateDocumentsTab();
 }
 
 /* ---------- DASHBOARD ---------- */
@@ -278,7 +280,7 @@ function updatePoliciesTab() {
   } else {
     container.innerHTML = currentPolicies.map(p => {
       const a = (p.status === 'active' || p.status === 'Activo');
-      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span><a class="doc-link" href="#">Documentos</a></div>';
+      return '<div class="policy-row"><span class="ic"><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg></span><div class="info"><div class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</div><div class="ref">' + esc(p.reference || '—') + '</div></div><span class="st ' + (a ? 'active' : 'pending') + '">' + (a ? 'Activo' : 'Pendiente') + '</span><span class="pr">' + parseFloat(p.premium || 0).toFixed(0) + '€/mes</span><a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>';
     }).join('');
   }
 }
@@ -332,8 +334,8 @@ function initQuoteSelector() {
     $('prevCov').textContent = selectedQuote.cov;
     $('prevPts').textContent = '+ ' + selectedQuote.pts.toLocaleString() + ' WynPoints';
     $('prevRef').style.display = 'none'; $('prevRef').textContent = '';
-    var sb = $('successBlock');
-    if (sb) sb.classList.remove('is-shown');
+    var successEl = $('successBlock');
+    if (successEl) successEl.classList.remove('is-shown');
     $('saveQuoteBtn').style.display = '';
   });
 }
@@ -349,13 +351,116 @@ async function saveQuote() {
     });
     if (error) throw error;
     $('successRef').textContent = ref;
-    var sb = $('successBlock');
-    if (sb) sb.classList.add('is-shown');
+    var successEl = $('successBlock');
+    if (successEl) successEl.classList.add('is-shown');
     btn.style.display = 'none';
     $('prevRef').textContent = '\u2714 Cotizaci\u00f3n guardada';
     $('prevRef').style.display = 'block';
   } catch (err) { alert('Error al guardar: ' + err.message); }
   btn.disabled = false; btn.textContent = 'Guardar cotizaci\u00f3n';
+}
+
+/* ---------- SINIESTROS ---------- */
+var CLAIM_TONE = { 'Enviado': 'pending', 'En revisi\u00f3n': 'pending', 'Resuelto': 'active', 'Rechazado': 'pending' };
+
+function initClaims() {
+  var newBtn = $('newClaimBtn'), cancelBtn = $('cancelClaimBtn'), panel = $('claimFormPanel'), form = $('claimForm');
+  if (newBtn) newBtn.addEventListener('click', function() {
+    if (!currentUser) { navigate('#/login'); return; }
+    fillClaimPolicySelect();
+    if (panel) panel.classList.add('is-shown');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  if (cancelBtn) cancelBtn.addEventListener('click', function() { if (panel) panel.classList.remove('is-shown'); if (form) form.reset(); });
+  if (form) form.addEventListener('submit', function(e) { e.preventDefault(); submitClaim(); });
+}
+
+function fillClaimPolicySelect() {
+  var select = $('claimPolicy');
+  if (!select) return;
+  if (currentPolicies.length === 0) {
+    select.innerHTML = '<option value="">No tienes p\u00f3lizas activas todav\u00eda</option>';
+    return;
+  }
+  select.innerHTML = currentPolicies.map(function(p) {
+    var label = (p.type || p.policy_type || 'Seguro') + ' \u2014 ' + (p.reference || '');
+    return '<option value="' + esc(p.id || '') + '">' + esc(label) + '</option>';
+  }).join('');
+}
+
+async function submitClaim() {
+  if (!currentUser) { navigate('#/login'); return; }
+  var form = $('claimForm');
+  var btn = form.querySelector('button[type="submit"]');
+  var ref = 'SN-' + Date.now().toString(36).toUpperCase();
+  var payload = {
+    user_id: currentUser.id,
+    policy_id: $('claimPolicy').value || null,
+    reference: ref,
+    incident_type: $('claimType').value,
+    incident_date: $('claimDate').value,
+    phone: $('claimPhone').value,
+    description: $('claimDesc').value,
+    status: 'Enviado',
+    created_at: new Date().toISOString()
+  };
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    var { error } = await sb.from('claims').insert(payload);
+    if (error) throw error;
+    alert('Parte enviado. Referencia: ' + ref + '. Te avisaremos por email de cualquier novedad.');
+  } catch (err) {
+    alert('No hemos podido registrar el parte autom\u00e1ticamente (' + err.message + '). Escr\u00edbenos a contacto@wyncare.es con esta referencia y te ayudamos a mano: ' + ref);
+  }
+  btn.disabled = false; btn.textContent = 'Enviar parte';
+  form.reset();
+  $('claimFormPanel').classList.remove('is-shown');
+  updateClaimsTab();
+}
+
+async function updateClaimsTab() {
+  var panel = $('claimsListPanel');
+  if (!panel || !currentUser) return;
+  try {
+    var { data, error } = await sb.from('claims').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    if (error) throw error;
+    var claims = data || [];
+    if (claims.length === 0) {
+      panel.innerHTML = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todav\u00eda no has declarado ning\u00fan siniestro.</p></div>';
+    } else {
+      panel.innerHTML = claims.map(function(c) {
+        var tone = CLAIM_TONE[c.status] || 'pending';
+        var date = c.incident_date ? new Date(c.incident_date).toLocaleDateString() : '\u2014';
+        return '<div class="claim-row"><span class="ic"><svg class="icon"><use href="#i-alert"/></svg></span><div class="info"><div class="nm">' + esc(c.incident_type || 'Siniestro') + '</div><div class="ref">' + esc(c.reference || '') + '</div></div><span class="dt">' + date + '</span><span class="st ' + tone + '">' + esc(c.status || 'Enviado') + '</span></div>';
+      }).join('');
+    }
+  } catch (err) {
+    panel.innerHTML = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todav\u00eda no has declarado ning\u00fan siniestro.</p></div>';
+  }
+}
+
+/* ---------- DOCUMENTOS ---------- */
+async function updateDocumentsTab() {
+  var panel = $('documentsListPanel');
+  if (!panel || !currentUser) return;
+  var emptyHtml = '<div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todav\u00eda no hay documentos disponibles. Te avisaremos por email en cuanto lo est\u00e9n.</p></div>';
+  if (currentPolicies.length === 0) { panel.innerHTML = emptyHtml; return; }
+  try {
+    var policyIds = currentPolicies.map(function(p) { return p.id; }).filter(Boolean);
+    var { data, error } = await sb.from('policy_documents').select('*').in('policy_id', policyIds).order('created_at', { ascending: false });
+    if (error) throw error;
+    var docs = data || [];
+    if (docs.length === 0) { panel.innerHTML = emptyHtml; return; }
+    var policyById = {};
+    currentPolicies.forEach(function(p) { policyById[p.id] = p; });
+    panel.innerHTML = docs.map(function(d) {
+      var policy = policyById[d.policy_id];
+      var policyLabel = policy ? (policy.type || policy.policy_type || 'Seguro') + ' \u00b7 ' + (policy.reference || '') : '';
+      return '<div class="doc-row"><span class="ic"><svg class="icon"><use href="#i-doc"/></svg></span><div class="info"><div class="nm">' + esc(d.name || 'Documento') + '</div><div class="meta">' + esc(policyLabel) + '</div></div><a class="dl" href="' + esc(d.url || '#') + '" target="_blank" rel="noopener">Descargar</a></div>';
+    }).join('');
+  } catch (err) {
+    panel.innerHTML = emptyHtml;
+  }
 }
 
 /* ---------- FORMS ---------- */
@@ -732,6 +837,7 @@ async function loadAdminTab(tabName) {
   initQuoteSelector();
   initTelemedicina();
   initRewards();
+  initClaims();
   // Always bind forms even before Supabase loads
   initLoginForm();
   // Async session load

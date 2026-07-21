@@ -521,6 +521,20 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 .tele-book-panel{display:none;margin-top:1.2rem}
 .tele-book-panel.is-shown{display:block}
 
+.claim-form-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.3rem;margin-bottom:1.4rem}
+.claim-form-panel.is-shown{display:block}
+.claim-row,.doc-row{display:flex;align-items:center;gap:.7rem;padding:.85rem;border:1px solid var(--border);border-radius:var(--radius-sm);flex-wrap:wrap}
+.claim-row+.claim-row,.doc-row+.doc-row{margin-top:.6rem}
+.claim-row .ic{width:38px;height:38px;border-radius:50%;background:var(--danger-bg);display:flex;align-items:center;justify-content:center;flex:none}
+.claim-row .ic svg{width:17px;height:17px;color:var(--danger)}
+.doc-row .ic{width:38px;height:38px;border-radius:50%;background:rgba(var(--gold-rgb),.14);display:flex;align-items:center;justify-content:center;flex:none}
+.doc-row .ic svg{width:17px;height:17px;color:var(--gold)}
+.claim-row .info,.doc-row .info{flex:1;min-width:0}
+.claim-row .nm,.doc-row .nm{font-size:.9rem;font-weight:600}
+.claim-row .ref,.doc-row .meta{font-size:.72rem;color:var(--text-3);font-family:var(--font-mono)}
+.claim-row .dt{font-size:.78rem;color:var(--text-2);margin-right:.5rem}
+.doc-row .dl{font-size:.78rem;font-weight:600;color:var(--gold);flex:none}
+
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
 @media (max-width:900px){.settings-grid{grid-template-columns:1fr}}
 .settings-row{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;border-bottom:1px solid var(--border)}
@@ -1225,6 +1239,8 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
     <nav class="app-menu" aria-label="Menú del área cliente">
       <a class="app-menu-item" href="#/app/resumen" data-tab="resumen"><svg class="icon"><use href="#i-grid"/></svg>Resumen</a>
       <a class="app-menu-item" href="#/app/seguros" data-tab="seguros"><svg class="icon"><use href="#i-shield"/></svg>Mis seguros</a>
+      <a class="app-menu-item" href="#/app/siniestros" data-tab="siniestros"><svg class="icon"><use href="#i-alert"/></svg>Siniestros</a>
+      <a class="app-menu-item" href="#/app/documentos" data-tab="documentos"><svg class="icon"><use href="#i-doc"/></svg>Documentos</a>
       <a class="app-menu-item" href="#/app/presupuestos" data-tab="presupuestos"><svg class="icon"><use href="#i-search"/></svg>Presupuestos</a>
       <a class="app-menu-item" href="#/app/wynpoints" data-tab="wynpoints"><svg class="icon"><use href="#i-award"/></svg>WynPoints</a>
       <a class="app-menu-item" href="#/app/beneficios" data-tab="beneficios"><svg class="icon"><use href="#i-gift"/></svg>Beneficios</a>
@@ -1271,10 +1287,52 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
     <div class="app-tab" id="tab-seguros">
       <div class="app-topbar"><div class="app-title"><h2>Mis seguros</h2><p>Gestiona tus pólizas activas y su documentación</p></div></div>
       <div class="dash-panel">
-        <div class="policy-row"><span class="ic"><svg><use href="#i-car"/></svg></span><div class="info"><div class="nm">Seguro de Coche</div><div class="ref">WC-2024-001</div></div><span class="st active">Activo</span><span class="pr">35€/mes</span><a class="doc-link" href="#">Documentos</a></div>
-        <div class="policy-row"><span class="ic"><svg><use href="#i-home"/></svg></span><div class="info"><div class="nm">Seguro de Hogar</div><div class="ref">WC-2024-002</div></div><span class="st active">Activo</span><span class="pr">22€/mes</span><a class="doc-link" href="#">Documentos</a></div>
-        <div class="policy-row"><span class="ic"><svg><use href="#i-heart"/></svg></span><div class="info"><div class="nm">Seguro de Salud</div><div class="ref">WC-2024-003</div></div><span class="st active">Activo</span><span class="pr">52€/mes</span><a class="doc-link" href="#">Documentos</a></div>
-        <div class="policy-row"><span class="ic"><svg><use href="#i-gem"/></svg></span><div class="info"><div class="nm">Seguro de Vida</div><div class="ref">WC-2024-004</div></div><span class="st pending">Pendiente</span><span class="pr">18€/mes</span><a class="doc-link" href="#">Documentos</a></div>
+        <div class="policy-row"><span class="ic"><svg><use href="#i-car"/></svg></span><div class="info"><div class="nm">Seguro de Coche</div><div class="ref">WC-2024-001</div></div><span class="st active">Activo</span><span class="pr">35€/mes</span><a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>
+        <div class="policy-row"><span class="ic"><svg><use href="#i-home"/></svg></span><div class="info"><div class="nm">Seguro de Hogar</div><div class="ref">WC-2024-002</div></div><span class="st active">Activo</span><span class="pr">22€/mes</span><a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>
+        <div class="policy-row"><span class="ic"><svg><use href="#i-heart"/></svg></span><div class="info"><div class="nm">Seguro de Salud</div><div class="ref">WC-2024-003</div></div><span class="st active">Activo</span><span class="pr">52€/mes</span><a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>
+        <div class="policy-row"><span class="ic"><svg><use href="#i-gem"/></svg></span><div class="info"><div class="nm">Seguro de Vida</div><div class="ref">WC-2024-004</div></div><span class="st pending">Pendiente</span><span class="pr">18€/mes</span><a class="doc-link" href="#/app/documentos">Documentos</a><a class="doc-link" href="#/app/siniestros">Declarar siniestro</a></div>
+      </div>
+    </div>
+
+    <!-- SINIESTROS -->
+    <div class="app-tab" id="tab-siniestros">
+      <div class="app-topbar">
+        <div class="app-title"><h2>Siniestros</h2><p>Declara una incidencia o consulta el estado de tus partes</p></div>
+        <button class="btn btn-primary btn-sm" type="button" id="newClaimBtn"><svg class="icon" style="width:15px;height:15px"><use href="#i-plus"/></svg>Declarar siniestro</button>
+      </div>
+      <div class="claim-form-panel" id="claimFormPanel">
+        <form id="claimForm">
+          <div class="field" style="margin-top:0"><label for="claimPolicy">Póliza afectada</label><div class="input-wrap"><svg class="icon"><use href="#i-shield"/></svg><select id="claimPolicy" required></select></div></div>
+          <div class="field"><label for="claimType">Tipo de incidencia</label><div class="input-wrap"><svg class="icon"><use href="#i-alert"/></svg>
+            <select id="claimType" required>
+              <option value="">Selecciona…</option>
+              <option>Accidente</option>
+              <option>Avería</option>
+              <option>Robo</option>
+              <option>Incendio</option>
+              <option>Daños por agua</option>
+              <option>Otro</option>
+            </select>
+          </div></div>
+          <div class="field"><label for="claimDate">Fecha del incidente</label><div class="input-wrap"><svg class="icon"><use href="#i-doc"/></svg><input id="claimDate" type="date" required></div></div>
+          <div class="field"><label for="claimPhone">Teléfono de contacto</label><div class="input-wrap"><svg class="icon"><use href="#i-user"/></svg><input id="claimPhone" type="tel" placeholder="600 000 000"></div></div>
+          <div class="field"><label for="claimDesc">¿Qué ha pasado?</label><div class="input-wrap" style="align-items:flex-start;padding-block:.6rem"><svg class="icon" style="margin-top:.15rem"><use href="#i-chat"/></svg><textarea id="claimDesc" rows="3" required placeholder="Cuéntanos qué ha ocurrido con el mayor detalle posible…" style="resize:vertical;width:100%"></textarea></div></div>
+          <div style="display:flex;gap:.6rem;margin-top:1.2rem">
+            <button class="btn btn-primary" type="submit">Enviar parte</button>
+            <button class="btn btn-quiet" type="button" id="cancelClaimBtn">Cancelar</button>
+          </div>
+        </form>
+      </div>
+      <div class="dash-panel" id="claimsListPanel">
+        <div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todavía no has declarado ningún siniestro.</p></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTOS -->
+    <div class="app-tab" id="tab-documentos">
+      <div class="app-topbar"><div class="app-title"><h2>Documentos</h2><p>Toda la documentación de tus pólizas en un solo lugar</p></div></div>
+      <div class="dash-panel" id="documentsListPanel">
+        <div class="empty-block"><svg class="icon"><use href="#i-inbox"/></svg><p>Todavía no hay documentos disponibles. Te avisaremos por email en cuanto lo estén.</p></div>
       </div>
     </div>
 
