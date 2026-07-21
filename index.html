@@ -210,7 +210,8 @@ em.accent{font-style:normal;color:var(--gold)}
 .mock-bar .url{margin-left:.55rem;font-family:var(--font-mono);font-size:.7rem;color:var(--text-3)}
 .mock-body{padding:1.4rem;background:var(--surface)}
 .mock-profile{display:flex;align-items:center;gap:.75rem}
-.avatar{width:40px;height:40px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-weight:700;flex:none;overflow:hidden}
+.avatar svg{width:100%;height:100%;display:block}
 .mock-profile .n{font-weight:600;font-size:.95rem}
 .mock-profile .s{font-size:.8rem;color:var(--text-2)}
 .mock-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.55rem;margin-top:1.2rem}
@@ -311,6 +312,21 @@ em.accent{font-style:normal;color:var(--gold)}
 .ex-body .l{font-size:.72rem;color:var(--text-3)}
 .ex-body .n{font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold);margin-top:.25rem}
 @media (max-width:900px){.wp-grid{grid-template-columns:1fr}}
+
+.rate-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.6rem clamp(1.2rem,3vw,1.9rem);box-shadow:var(--shadow-1);margin-top:2.2rem}
+.rate-card h3{margin-bottom:.3rem}
+.rate-card>p{color:var(--text-2);font-size:.9rem;margin-bottom:.6rem}
+.rate-row{display:flex;align-items:center;gap:.9rem;padding:.9rem 0;border-bottom:1px solid var(--border)}
+.rate-row:last-child{border-bottom:0}
+.rate-row .ic{width:38px;height:38px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex:none}
+.rate-row .ic svg{width:17px;height:17px;color:var(--gold)}
+.rate-row .info{flex:1}
+.rate-row .nm{font-size:.92rem;font-weight:600}
+.rate-row .ds{font-size:.78rem;color:var(--text-2);margin-top:.1rem}
+.rate-row .nums{text-align:right}
+.rate-row .nums .py{font-family:var(--font-mono);font-size:.85rem;font-weight:600;color:var(--gold-text)}
+.rate-row .nums .pm{font-size:.72rem;color:var(--text-2);margin-top:.15rem}
+@media (max-width:520px){.rate-row .ds{display:none}}
 
 .tele-section{display:grid;grid-template-columns:1fr 1fr;gap:clamp(2rem,5vw,3.5rem);align-items:center}
 .tele-visual{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.4rem;box-shadow:var(--shadow-1)}
@@ -684,11 +700,11 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 6.5 21l5.5-3 5.5 3-2-8.5"/></symbol>
 <symbol id="i-pulse" viewBox="0 0 24 24"><polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/></symbol>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
-<symbol id="i-car" viewBox="0 0 24 24"><path d="M3 13l1.5-5A2 2 0 0 1 6.4 6.5h11.2A2 2 0 0 1 19.5 8L21 13v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1H6v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5z"/><circle cx="7" cy="18" r="1.4"/><circle cx="17" cy="18" r="1.4"/></symbol>
-<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-9z"/></symbol>
-<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.5-9A5 5 0 0 1 12 5.5 5 5 0 0 1 21.5 11c-2.5 4.6-9.5 9-9.5 9z"/></symbol>
-<symbol id="i-gem" viewBox="0 0 24 24"><path d="M6 4h12l3 5-9 11L3 9l3-5z"/><polyline points="3 9 21 9"/><polyline points="9 4 12 9 15 4"/></symbol>
-<symbol id="i-building" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><line x1="8" y1="7" x2="10" y2="7"/><line x1="14" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="10" y2="11"/><line x1="14" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="10" y2="15"/><line x1="14" y1="15" x2="16" y2="15"/></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15.5V12a1 1 0 0 1 .1-.4l1.6-3.4A2 2 0 0 1 6.5 7h2l1.8-2.3A2 2 0 0 1 11.9 4h.2a2 2 0 0 1 1.6.8L15.5 7h2a2 2 0 0 1 1.8 1.2l1.6 3.4a1 1 0 0 1 .1.4v3.5"/><path d="M2.3 15.5h19.4"/><path d="M8 7h8"/><circle cx="7" cy="15.8" r="1.7"/><circle cx="17" cy="15.8" r="1.7"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.7V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.7"/><path d="M10 20v-5.2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V20"/><line x1="7.3" y1="13.5" x2="8.8" y2="13.5"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.5S3.8 14.6 3.8 9.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.2 2.2c0 5.4-8.2 10.3-8.2 10.3z"/><polyline points="6.2 12 9 12 10.3 8.8 12.7 15.2 14 12 17.8 12"/></symbol>
+<symbol id="i-gem" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.4 8-7 9-3.6-1-7-4-7-9V6l7-3z"/><path d="M12 15S9 13.2 9 11a1.9 1.9 0 0 1 3-1.6A1.9 1.9 0 0 1 15 11c0 2.2-3 4-3 4z"/></symbol>
+<symbol id="i-building" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="11" rx="1.6"/><path d="M8.5 8V6.3a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2V8"/><line x1="3" y1="13.2" x2="21" y2="13.2"/><line x1="10.8" y1="13.2" x2="13.2" y2="13.2"/></symbol>
 <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><rect x="4" y="12" width="16" height="9" rx="1"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8C10 4 6 5 6 7.5S9 8 12 8zM12 8c2-4 6-3 6-.5S15 8 12 8z"/></symbol>
 <symbol id="i-fuel" viewBox="0 0 24 24"><path d="M6 21V6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v15"/><line x1="4" y1="21" x2="16" y2="21"/><path d="M14 10h2.5a1.5 1.5 0 0 1 1.5 1.5V17a1.5 1.5 0 0 0 3 0v-6l-2.5-2.5"/></symbol>
 <symbol id="i-fork" viewBox="0 0 24 24"><line x1="6" y1="2" x2="6" y2="9"/><line x1="9" y1="2" x2="9" y2="9"/><path d="M6 9c0 2 1.5 3 3 3v10"/><path d="M17 2c-1.5 0-2.5 1.5-2.5 4s1 4 2.5 4v12"/></symbol>
@@ -815,7 +831,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
             <button class="type-card" type="button" data-type="Salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span></button>
             <button class="type-card" type="button" data-type="Vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span></button>
             <button class="type-card" type="button" data-type="Empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span></button>
-            <button class="type-card" type="button" data-type="Telemedicina" aria-pressed="false"><svg><use href="#i-pulse"/></svg><span class="tn">Telemedicina</span></button>
+            <button class="type-card" type="button" data-type="Telemedicina" aria-pressed="false"><svg><use href="#i-video"/></svg><span class="tn">Telemedicina</span></button>
           </div>
           <div class="calc-body">
             <div class="calc-questions" id="calcQuestions"></div>
@@ -943,13 +959,13 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
       </div>
     </section>
 
-    <!-- COMPARATIVA -->
-    <section id="comparativa" class="section-pad" style="background:var(--surface-2)">
+    <!-- POR QUÉ WYNCARE + WYNPOINTS -->
+    <section id="wynpoints" class="wp-teaser section-pad" style="background:var(--surface-2);scroll-margin-top:90px">
       <div class="container">
         <div class="section-head center reveal">
           <span class="eyebrow">Por qué WynCare</span>
-          <h2>Lo mismo que ya conoces, sin la parte pesada</h2>
-          <p>Mismas aseguradoras (AXA, Mapfre, Sanitas, Allianz, Generali), mismo precio de póliza — con menos fricción y más recompensas.</p>
+          <h2>Lo mismo que ya conoces, con más recompensas</h2>
+          <p>Mismas aseguradoras (AXA, Mapfre, Sanitas, Allianz, Generali), mismo precio de póliza — con menos fricción y WynPoints por estar protegido.</p>
         </div>
         <div class="compare-card reveal">
           <div class="compare-row compare-head">
@@ -964,16 +980,11 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <div class="compare-row"><div class="compare-label">Telemedicina incluida</div><div class="compare-x"><svg class="icon"><use href="#i-close"/></svg></div><div class="compare-check"><svg class="icon"><use href="#i-check"/></svg></div></div>
           <div class="compare-row"><div class="compare-label">Precio de la póliza</div><div class="compare-eq">El mismo</div><div class="compare-eq best">El mismo</div></div>
         </div>
-      </div>
-    </section>
 
-    <!-- WYNPOINTS TEASER -->
-    <section id="wynpoints" class="wp-teaser section-pad" style="scroll-margin-top:90px">
-      <div class="container">
-        <div class="section-head reveal">
+        <div class="section-head reveal" style="margin-top:clamp(3rem,6vw,4.5rem)">
           <span class="eyebrow">WynPoints</span>
-          <h2>Gana puntos por estar protegido</h2>
-          <p>Cada seguro activo genera WynPoints. Canjéalos por recompensas reales.</p>
+          <h2>Y te recompensamos por estar protegido</h2>
+          <p>Cada seguro activo genera WynPoints automáticamente. Canjéalos por recompensas reales.</p>
         </div>
         <div class="wp-grid">
           <div class="balance-card reveal">
@@ -983,13 +994,6 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
             </div>
             <div class="progress-track"><div class="progress-fill" style="width:81%"></div></div>
             <div class="progress-caption"><span>4.850 pts</span><span>Oro · 6.000 pts</span></div>
-            <div class="wp-earn">
-              <div><svg><use href="#i-car"/></svg><span class="nm">Coche</span><span class="pt">+700 pts</span></div>
-              <div><svg><use href="#i-home"/></svg><span class="nm">Hogar</span><span class="pt">+600 pts</span></div>
-              <div><svg><use href="#i-heart"/></svg><span class="nm">Salud</span><span class="pt">+1.500 pts</span></div>
-              <div><svg><use href="#i-gem"/></svg><span class="nm">Vida</span><span class="pt">+2.500 pts</span></div>
-              <div><svg><use href="#i-building"/></svg><span class="nm">Empresa</span><span class="pt">+3.500 pts</span></div>
-            </div>
           </div>
           <div class="reveal">
             <h3>Acumula sin esfuerzo</h3>
@@ -1010,6 +1014,31 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
                 <div><div class="l">Ahorro anual en primas</div><div class="n">420€</div></div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="rate-card reveal">
+          <h3>Ganas puntos por cada seguro</h3>
+          <p>Con las tarifas desde las que partimos. Al calcular un seguro con tu perfil, se ajusta.</p>
+          <div class="rate-row">
+            <span class="ic"><svg><use href="#i-car"/></svg></span>
+            <div class="info"><div class="nm">Coche</div><div class="ds">1 pt por cada 1€ de prima</div></div>
+            <div class="nums"><div class="py">+420 pts/año</div><div class="pm">35 pts/mes</div></div>
+          </div>
+          <div class="rate-row">
+            <span class="ic"><svg><use href="#i-home"/></svg></span>
+            <div class="info"><div class="nm">Hogar</div><div class="ds">1 pt por cada 1€ de prima</div></div>
+            <div class="nums"><div class="py">+264 pts/año</div><div class="pm">22 pts/mes</div></div>
+          </div>
+          <div class="rate-row">
+            <span class="ic"><svg><use href="#i-heart"/></svg></span>
+            <div class="info"><div class="nm">Salud</div><div class="ds">2 pt por cada 1€ de prima</div></div>
+            <div class="nums"><div class="py">+1.080 pts/año</div><div class="pm">90 pts/mes</div></div>
+          </div>
+          <div class="rate-row">
+            <span class="ic"><svg><use href="#i-gem"/></svg></span>
+            <div class="info"><div class="nm">Vida</div><div class="ds">3 pt por cada 1€ de prima</div></div>
+            <div class="nums"><div class="py">+540 pts/año</div><div class="pm">45 pts/mes</div></div>
           </div>
         </div>
       </div>
@@ -1064,17 +1093,17 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <div class="tm-card reveal">
             <div class="tm-stars"><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg></div>
             <p class="tm-quote">"Contraté coche y hogar en 10 minutos, sin una sola llamada. Y ya llevo 700 WynPoints."</p>
-            <div class="tm-who"><div class="avatar" style="width:34px;height:34px;font-size:.8rem">A</div><div><div class="n">Ana García</div><div class="r">Cliente desde 2024</div></div></div>
+            <div class="tm-who"><div class="avatar" style="width:34px;height:34px"><svg viewBox="0 0 40 40"><defs><linearGradient id="tmA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D9A15B"/><stop offset="1" stop-color="#8B5E34"/></linearGradient></defs><rect width="40" height="40" fill="url(#tmA)"/><circle cx="20" cy="15.5" r="7" fill="rgba(255,255,255,.92)"/><path d="M6 34c0-7.5 6.3-11.5 14-11.5s14 4 14 11.5v1H6z" fill="rgba(255,255,255,.92)"/></svg></div><div><div class="n">Ana García</div><div class="r">Cliente desde 2024</div></div></div>
           </div>
           <div class="tm-card reveal">
             <div class="tm-stars"><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg></div>
             <p class="tm-quote">"Todos mis seguros, mis puntos y mis consultas médicas en una sola app. Así debería ser esto."</p>
-            <div class="tm-who"><div class="avatar" style="width:34px;height:34px;font-size:.8rem">M</div><div><div class="n">Marc Ruiz</div><div class="r">Cliente desde 2025</div></div></div>
+            <div class="tm-who"><div class="avatar" style="width:34px;height:34px"><svg viewBox="0 0 40 40"><defs><linearGradient id="tmB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E8E85"/><stop offset="1" stop-color="#1F4C48"/></linearGradient></defs><rect width="40" height="40" fill="url(#tmB)"/><circle cx="20" cy="15.5" r="7" fill="rgba(255,255,255,.92)"/><path d="M6 34c0-7.5 6.3-11.5 14-11.5s14 4 14 11.5v1H6z" fill="rgba(255,255,255,.92)"/></svg></div><div><div class="n">Marc Ruiz</div><div class="r">Cliente desde 2025</div></div></div>
           </div>
           <div class="tm-card reveal">
             <div class="tm-stars"><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg><svg class="icon"><use href="#i-star"/></svg></div>
             <p class="tm-quote">"Teddy me resolvió una duda de cobertura a las 11 de la noche. Cero esperas, cero letra pequeña."</p>
-            <div class="tm-who"><div class="avatar" style="width:34px;height:34px;font-size:.8rem">L</div><div><div class="n">Laura Sánchez</div><div class="r">Cliente desde 2025</div></div></div>
+            <div class="tm-who"><div class="avatar" style="width:34px;height:34px"><svg viewBox="0 0 40 40"><defs><linearGradient id="tmC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8A6FB0"/><stop offset="1" stop-color="#4B3570"/></linearGradient></defs><rect width="40" height="40" fill="url(#tmC)"/><circle cx="20" cy="15.5" r="7" fill="rgba(255,255,255,.92)"/><path d="M6 34c0-7.5 6.3-11.5 14-11.5s14 4 14 11.5v1H6z" fill="rgba(255,255,255,.92)"/></svg></div><div><div class="n">Laura Sánchez</div><div class="r">Cliente desde 2025</div></div></div>
           </div>
         </div>
       </div>
@@ -1484,7 +1513,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
               <button class="type-card" type="button" data-name="Salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span><span class="tp">Desde 45€/mes</span></button>
               <button class="type-card" type="button" data-name="Vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span><span class="tp">Desde 15€/mes</span></button>
               <button class="type-card" type="button" data-name="Empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span><span class="tp">Desde 80€/mes</span></button>
-              <button class="type-card" type="button" data-name="Telemedicina" aria-pressed="false"><svg><use href="#i-pulse"/></svg><span class="tn">Telemedicina</span><span class="tp">Desde 9€/mes</span></button>
+              <button class="type-card" type="button" data-name="Telemedicina" aria-pressed="false"><svg><use href="#i-video"/></svg><span class="tn">Telemedicina</span><span class="tp">Desde 9€/mes</span></button>
             </div>
             <div class="calc-questions" id="quoteQuestions"></div>
             <div class="calc-field">
