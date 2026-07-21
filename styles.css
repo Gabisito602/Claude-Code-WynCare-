@@ -19,10 +19,13 @@
   --canvas:#0A0F1C; --surface:#0F1626; --surface-2:#141D33; --surface-3:#1A2440;
   --glass-bg:rgba(255,255,255,.05); --glass-border:rgba(255,255,255,.12);
   --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.18);
-  --text-1:#F4F2EC; --text-2:rgba(244,242,236,.66); --text-3:rgba(244,242,236,.4);
+  --text-1:#F4F2EC; --text-2:rgba(244,242,236,.66); --text-3:rgba(244,242,236,.62);
 
   /* marca */
   --gold:#D8B573; --gold-strong:#E8C98F; --gold-ink:#20160A; --gold-rgb:216,181,115;
+  /* variante de --gold para texto de enlace (AA 4.5:1 en ambos temas; --gold a secas
+     solo cumple contraste como fondo de botón o como icono/borde, no como texto) */
+  --gold-text:#D8B573;
   --violet:#8C7CF0; --violet-rgb:140,124,240; --teal:#4FD6C4; --teal-rgb:79,214,196;
 
   /* estados */
@@ -49,8 +52,9 @@ html[data-theme="light"]{
   --canvas:#F6F4EE; --surface:#FFFFFF; --surface-2:#FBF9F3; --surface-3:#F1EDE1;
   --glass-bg:rgba(16,22,38,.035); --glass-border:rgba(16,22,38,.09);
   --border:rgba(16,22,38,.09); --border-strong:rgba(16,22,38,.18);
-  --text-1:#12172A; --text-2:rgba(18,23,42,.64); --text-3:rgba(18,23,42,.4);
+  --text-1:#12172A; --text-2:rgba(18,23,42,.64); --text-3:rgba(18,23,42,.62);
   --gold:#A9813C; --gold-strong:#8C6B2E; --gold-ink:#FFFFFF; --gold-rgb:169,129,60;
+  --gold-text:#876730;
   --success:#1F9463; --success-bg:#E4F5EC; --danger:#C7472F; --danger-bg:#FBE7E2;
   --warning:#9A7415; --warning-bg:#F6ECD2;
   --shadow-1:0 16px 40px -24px rgba(16,22,38,.16); --shadow-2:0 24px 64px -28px rgba(16,22,38,.2);

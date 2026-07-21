@@ -793,17 +793,36 @@ document.addEventListener('click', function(e) {
   if (stored === 'all') loadGoogleFonts();
 
   var banner = $('cookieBanner');
-  if (!stored && banner) banner.classList.add('is-shown');
+
+  // El banner es position:fixed, así que por defecto puede solaparse con
+  // contenido (p.ej. el CTA del hero en móviles bajos). Mientras esté
+  // visible, reservamos su altura real como padding-bottom del body para
+  // que nunca tape nada — en vez de recortar el aviso para que "quepa".
+  function reserveSpace() {
+    if (!banner || !banner.classList.contains('is-shown')) { document.body.style.paddingBottom = ''; return; }
+    document.body.style.paddingBottom = (banner.getBoundingClientRect().height + 16) + 'px';
+  }
+  function hideBanner() {
+    if (banner) banner.classList.remove('is-shown');
+    document.body.style.paddingBottom = '';
+    window.removeEventListener('resize', reserveSpace);
+  }
+
+  if (!stored && banner) {
+    banner.classList.add('is-shown');
+    reserveSpace();
+    window.addEventListener('resize', reserveSpace);
+  }
 
   var acceptBtn = $('cookieAccept'), rejectBtn = $('cookieReject');
   if (acceptBtn) acceptBtn.addEventListener('click', function() {
     localStorage.setItem(KEY, 'all');
     loadGoogleFonts();
-    if (banner) banner.classList.remove('is-shown');
+    hideBanner();
   });
   if (rejectBtn) rejectBtn.addEventListener('click', function() {
     localStorage.setItem(KEY, 'necessary');
-    if (banner) banner.classList.remove('is-shown');
+    hideBanner();
   });
 })();
 
