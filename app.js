@@ -353,7 +353,6 @@ function formatEsNumber(n, decimals) {
 }
 
 function getTier(points) {
-  if (points >= 12000) return 'Platino';
   if (points >= 6000) return 'Oro';
   if (points >= 2000) return 'Plata';
   return 'Bronce';
@@ -450,11 +449,15 @@ async function handleLogin(email, password) {
 
 async function handleRegister(name, email, password) {
   try {
-    const { data, error } = await sb.auth.signUp({ email, password });
+    // "options.data" queda en auth.users.raw_user_meta_data: lo lee el
+    // trigger "handle_new_user" (ver supabase/migrations) para crear el
+    // perfil y dar el bono de bienvenida en cuanto se registra, sin
+    // depender de que este código del cliente llegue a ejecutarse.
+    const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
     if (error) throw error;
     if (data?.user) {
-      // "profiles" no tiene columna "email" (el correo vive en auth.users,
-      // vía Supabase Auth) — solo guardamos aquí el nombre.
+      // El trigger ya crea "profiles" al vuelo; este upsert es solo una
+      // red de seguridad por si acaso (idempotente por "onConflict").
       await sb.from('profiles').upsert({
         id: data.user.id, full_name: name
       }, { onConflict: 'id' });
@@ -598,7 +601,7 @@ function updatePoliciesTab() {
 function updateWynpointsTab() {
   const pts = currentProfile?.wynpoints || 0;
   const tier = getTier(pts);
-  const tiers = ['Bronce', 'Plata', 'Oro', 'Platino'];
+  const tiers = ['Bronce', 'Plata', 'Oro'];
   const idx = tiers.indexOf(tier);
   const ptsEl = qs('#tab-wynpoints .points-num');
   if (ptsEl) ptsEl.innerHTML = pts.toLocaleString() + ' <small>pts</small>';

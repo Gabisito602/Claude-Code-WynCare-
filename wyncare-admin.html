@@ -655,7 +655,6 @@ function formatEsNumber(n){
 /* Mismos umbrales que getTier() en app.js: hay que mantenerlos sincronizados
    si cambia el programa de niveles. */
 function getTier(points){
-  if (points >= 12000) return 'Platino';
   if (points >= 6000) return 'Oro';
   if (points >= 2000) return 'Plata';
   return 'Bronce';
@@ -849,7 +848,7 @@ var TONE_MAP = {
   'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Pendiente documentación':'warning','Verificación':'warning','Solicitado':'warning',
   'Cancelada':'danger','Inactivo':'danger','De baja':'danger','No':'danger','Rechazado':'danger','Expirada':'danger','Expirado':'danger',
   'Pausado':'neutral','Borrador':'neutral','Guardado':'neutral',
-  'Admin':'gold','Oro':'gold','Platino':'gold'
+  'Admin':'gold','Oro':'gold'
 };
 function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class="badge tone-'+tone+'">'+esc(v)+'</span>'; }
 
@@ -1066,13 +1065,12 @@ var D = {
   },
   niveles:{
     title:'Niveles', addLabel:'Nuevo nivel',
-    stats:[['4','niveles activos']],
+    stats:[['3','niveles activos']],
     columns:[{key:'nivel',label:'Nivel',badge:true},{key:'umbral',label:'Umbral',align:'right'},{key:'beneficio',label:'Beneficio principal'}],
     rows:[
-      {nivel:'Bronce',umbral:'0 pts',beneficio:'Acceso a recompensas básicas'},
-      {nivel:'Plata',umbral:'3.000 pts',beneficio:'Telemedicina con 20% dto.'},
-      {nivel:'Oro',umbral:'6.000 pts',beneficio:'Telemedicina incluida'},
-      {nivel:'Platino',umbral:'12.000 pts',beneficio:'Asesor personal + regalo anual'}
+      {nivel:'Bronce',umbral:'0 – 1.999 pts',beneficio:'Sin bonus de canje'},
+      {nivel:'Plata',umbral:'2.000 – 5.999 pts',beneficio:'+10% bonus canje · Ofertas exclusivas'},
+      {nivel:'Oro',umbral:'6.000+ pts',beneficio:'+20% bonus canje · Prioridad en telemedicina'}
     ]
   },
   beneficios:{
@@ -1223,7 +1221,7 @@ function renderHBars(elId, data){
 }
 renderHBars('hbarTipos', [{l:'Coche',v:34},{l:'Hogar',v:26},{l:'Salud',v:21},{l:'Vida',v:12},{l:'Empresa',v:7}]);
 renderHBars('hbarCanjes', [{l:'Regalo',v:38},{l:'Movilidad',v:27},{l:'Bienestar',v:19},{l:'Ocio',v:11},{l:'Salud',v:5}]);
-renderHBars('hbarNiveles', [{l:'Bronce',v:46},{l:'Plata',v:31},{l:'Oro',v:16},{l:'Platino',v:7}]);
+renderHBars('hbarNiveles', [{l:'Bronce',v:46},{l:'Plata',v:31},{l:'Oro',v:23}]);
 
 /* ---------- ACTIVITY FEED ---------- */
 document.getElementById('activityFeed').innerHTML = D.logs.rows.slice(0,4).map(function(r){
