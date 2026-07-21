@@ -146,19 +146,28 @@ function initQuotesViewToggle() {
 // Precios y puntos "base" (nivel Estándar, primera opción de cada pregunta).
 // El precio final es orientativo: base x nivel x cada respuesta. La aseguradora
 // valida el precio real una vez el cliente crea su cuenta y envía la cotización.
+// "postal: true" activa el campo de código postal (solo Coche y Hogar): es
+// opcional y solo afina el PRECIO por zona, nunca los WynPoints. Telemedicina
+// ya no está aquí: es una ventaja de WynCare+ que se contrata aparte, no un
+// seguro que se compare en este widget.
 const CALC_TYPES = {
-  Coche: { cov: 'Cobertura completa coche', base: 35, pts: 700, questions: [
-    { key: 'antiguedad', label: 'Antigüedad del vehículo', options: [
-      { label: 'Nuevo (0-3 años)', mult: 1 },
-      { label: '4-8 años', mult: 0.95 },
-      { label: '+8 años', mult: 0.85 }
+  Coche: { cov: 'Cobertura completa coche', base: 35, pts: 700, postal: true, questions: [
+    { key: 'vehiculo', label: 'Tipo de vehículo', options: [
+      { label: 'Turismo', mult: 1 },
+      { label: 'Moto', mult: 0.8 },
+      { label: 'Furgoneta', mult: 1.2 }
     ]},
-    { key: 'uso', label: 'Uso principal', options: [
+    { key: 'uso', label: 'Uso', options: [
       { label: 'Particular', mult: 1 },
       { label: 'Profesional (VTC, reparto...)', mult: 1.35 }
+    ]},
+    { key: 'carne', label: 'Antigüedad del carné', options: [
+      { label: '+5 años', mult: 1 },
+      { label: '2-5 años', mult: 1.15 },
+      { label: 'Menos de 2 años', mult: 1.4 }
     ]}
   ]},
-  Hogar: { cov: 'Cobertura completa hogar', base: 22, pts: 600, questions: [
+  Hogar: { cov: 'Cobertura completa hogar', base: 22, pts: 600, postal: true, questions: [
     { key: 'vivienda', label: 'Tipo de vivienda', options: [
       { label: 'Piso', mult: 1 },
       { label: 'Casa / chalet', mult: 1.25 }
@@ -169,18 +178,27 @@ const CALC_TYPES = {
     ]}
   ]},
   Salud: { cov: 'Cobertura completa salud', base: 45, pts: 1500, questions: [
-    { key: 'asegurados', label: 'Personas a asegurar', options: [
+    { key: 'personas', label: 'Nº de personas', options: [
       { label: 'Solo yo', mult: 1 },
       { label: 'Pareja', mult: 1.7 },
       { label: 'Familia (3+)', mult: 2.6 }
     ]},
-    { key: 'edad', label: 'Edad del titular', options: [
+    { key: 'edad', label: 'Edad del asegurado principal', options: [
       { label: 'Hasta 35', mult: 1 },
       { label: '36-55', mult: 1.15 },
       { label: '+55', mult: 1.45 }
+    ]},
+    { key: 'copago', label: 'Copago', options: [
+      { label: 'Con copago', mult: 0.85 },
+      { label: 'Sin copago', mult: 1.15 }
     ]}
   ]},
   Vida: { cov: 'Cobertura completa vida', base: 15, pts: 2500, questions: [
+    { key: 'edad', label: 'Edad', options: [
+      { label: 'Hasta 35', mult: 1 },
+      { label: '36-50', mult: 1.4 },
+      { label: '+50', mult: 2 }
+    ]},
     { key: 'capital', label: 'Capital asegurado', options: [
       { label: '50.000€', mult: 1 },
       { label: '100.000€', mult: 1.6 },
@@ -192,28 +210,52 @@ const CALC_TYPES = {
     ]}
   ]},
   Empresa: { cov: 'Cobertura completa empresa', base: 80, pts: 3500, questions: [
+    { key: 'sector', label: 'Sector', options: [
+      { label: 'Comercio', mult: 1 },
+      { label: 'Oficina', mult: 0.9 },
+      { label: 'Hostelería', mult: 1.35 },
+      { label: 'Otro', mult: 1.1 }
+    ]},
     { key: 'empleados', label: 'Nº de empleados', options: [
       { label: '1-5', mult: 1 },
       { label: '6-20', mult: 1.8 },
       { label: '+20', mult: 3 }
-    ]},
-    { key: 'sector', label: 'Sector', options: [
-      { label: 'Oficina / servicios', mult: 1 },
-      { label: 'Comercio / industrial', mult: 1.3 }
     ]}
   ]},
-  Telemedicina: { cov: 'Acceso a videoconsultas', base: 9, pts: 0, questions: [
-    { key: 'cobertura', label: 'Cobertura', options: [
-      { label: 'Individual', mult: 1 },
-      { label: 'Familiar (hasta 4)', mult: 1.8 }
+  Mascotas: { cov: 'Cobertura completa mascotas', base: 10, pts: 300, questions: [
+    { key: 'tipo', label: 'Tipo de mascota', options: [
+      { label: 'Perro', mult: 1 },
+      { label: 'Gato', mult: 0.85 },
+      { label: 'Otro', mult: 0.9 }
     ]},
-    { key: 'uso', label: 'Uso esperado', options: [
-      { label: 'Ocasional', mult: 1 },
-      { label: 'Frecuente', mult: 1.2 }
+    { key: 'edad', label: 'Edad', options: [
+      { label: 'Cachorro (-1 año)', mult: 0.9 },
+      { label: 'Adulto (1-7)', mult: 1 },
+      { label: 'Senior (+7)', mult: 1.4 }
+    ]},
+    { key: 'rc', label: 'Responsabilidad civil', options: [
+      { label: 'Sin RC', mult: 1 },
+      { label: 'Con RC', mult: 1.2 }
     ]}
   ]}
 };
 const CALC_LEVEL_MULT = { 'Básica': 0.8, 'Estándar': 1, 'Completa': 1.3 };
+
+// Multiplicador regional orientativo a partir del código postal español (los
+// 2 primeros dígitos = provincia). Solo afecta al precio de Coche/Hogar y solo
+// si se introduce un CP; vacío o inválido => 1 (sin efecto). Es una estimación
+// para la demo: la aseguradora calcula la tarifa real al validar.
+function calcRegionalMult(cp) {
+  var digits = String(cp || '').replace(/\D/g, '');
+  if (digits.length < 2) return 1;
+  var prov = parseInt(digits.slice(0, 2), 10);
+  if (prov < 1 || prov > 52) return 1;
+  var alta = [28, 8, 41, 46, 48, 29, 7]; // Madrid, Barcelona, Sevilla, Valencia, Bizkaia, Málaga, Balears
+  var baja = [42, 44, 40, 34, 5, 49, 16, 19]; // Soria, Teruel, Segovia, Palencia, Ávila, Zamora, Cuenca, Guadalajara
+  if (alta.indexOf(prov) > -1) return 1.12;
+  if (baja.indexOf(prov) > -1) return 0.9;
+  return 1;
+}
 
 // Motor compartido por la calculadora de la landing y "Cotizar seguro" del
 // Área Cliente: mismo tipo, mismas preguntas, mismo cálculo de precio — así
@@ -222,6 +264,9 @@ const CALC_LEVEL_MULT = { 'Básica': 0.8, 'Estándar': 1, 'Completa': 1.3 };
 function initCalcWidget(opts) {
   var typesEl = opts.typesEl, questionsEl = opts.questionsEl, levelsEl = opts.levelsEl;
   if (!typesEl || !questionsEl || !levelsEl) return null;
+  var postalWrap = opts.postalWrap || null;
+  var postalInput = postalWrap ? postalWrap.querySelector('input') : null;
+  var whyEl = opts.whyEl || null;
 
   function defaultAnswers(type) {
     var a = {};
@@ -229,7 +274,12 @@ function initCalcWidget(opts) {
     return a;
   }
 
-  var state = { type: 'Coche', level: 'Estándar', answers: defaultAnswers('Coche') };
+  var state = { type: 'Coche', level: 'Estándar', answers: defaultAnswers('Coche'), postal: '' };
+
+  function syncPostal() {
+    if (!postalWrap) return;
+    postalWrap.style.display = CALC_TYPES[state.type].postal ? '' : 'none';
+  }
 
   function renderQuestions() {
     var cfg = CALC_TYPES[state.type];
@@ -240,24 +290,24 @@ function initCalcWidget(opts) {
       }).join('');
       return '<div class="calc-field"><div class="calc-field-label">' + esc(q.label) + '</div><div class="calc-qopts" data-qkey="' + q.key + '">' + opts + '</div></div>';
     }).join('');
-  }
-
-  function totalMult() {
-    var m = CALC_LEVEL_MULT[state.level];
-    Object.keys(state.answers).forEach(function(k) { m *= state.answers[k].mult; });
-    return m;
+    syncPostal();
   }
 
   function render() {
     var cfg = CALC_TYPES[state.type];
-    var mult = totalMult();
-    var price = cfg.base * mult;
-    var pts = Math.round(cfg.pts * mult);
+    // El nivel y las respuestas mueven precio Y puntos; el código postal solo
+    // afina el precio (por eso pts se calcula antes de aplicar el regional).
+    var baseMult = CALC_LEVEL_MULT[state.level];
+    Object.keys(state.answers).forEach(function(k) { baseMult *= state.answers[k].mult; });
+    var pts = Math.round(cfg.pts * baseMult);
+    var regional = cfg.postal ? calcRegionalMult(state.postal) : 1;
+    var price = cfg.base * baseMult * regional;
     opts.priceEl.textContent = formatCurrency(price) + '€';
     if (opts.ptsEl) opts.ptsEl.textContent = pts.toLocaleString();
     var detail = cfg.questions.map(function(q) { return state.answers[q.key].label; }).join(' · ');
+    if (whyEl) whyEl.innerHTML = '<span class="cw-q">¿Por qué este precio?</span> ' + esc(detail.toLowerCase() + ' · cobertura ' + state.level.toLowerCase());
     if (opts.onChange) opts.onChange({
-      type: state.type, level: state.level, answers: state.answers, price: price, pts: pts,
+      type: state.type, level: state.level, answers: state.answers, postal: state.postal, price: price, pts: pts,
       cov: cfg.cov, covDetailed: cfg.cov + ' · Nivel ' + state.level + ' · ' + detail
     });
   }
@@ -295,6 +345,11 @@ function initCalcWidget(opts) {
     render();
   });
 
+  if (postalInput) postalInput.addEventListener('input', function() {
+    state.postal = postalInput.value;
+    render();
+  });
+
   renderQuestions();
   render();
 
@@ -325,6 +380,11 @@ function initCalcWidget(opts) {
           });
         });
       }
+      if (partial.postal !== undefined) {
+        state.postal = partial.postal || '';
+        if (postalInput) postalInput.value = state.postal;
+      }
+      syncPostal();
       render();
     }
   };
@@ -359,7 +419,7 @@ function getTier(points) {
 }
 
 function getPolicyIcon(type) {
-  const m = { 'coche': 'i-car', 'hogar': 'i-home', 'salud': 'i-heart', 'vida': 'i-gem', 'empresa': 'i-building', 'telemedicina': 'i-pulse' };
+  const m = { 'coche': 'i-car', 'hogar': 'i-home', 'salud': 'i-heart', 'vida': 'i-gem', 'empresa': 'i-building', 'mascotas': 'i-paw', 'telemedicina': 'i-pulse' };
   return m[(type || '').toLowerCase()] || 'i-shield';
 }
 
@@ -636,7 +696,7 @@ function updateSettings() {
 function initQuoteSelector() {
   quoteCalcWidget = initCalcWidget({
     typesEl: $('typeGrid'), questionsEl: $('quoteQuestions'), levelsEl: $('quoteLevels'),
-    priceEl: $('prevPrice'), ptsEl: null,
+    priceEl: $('prevPrice'), ptsEl: null, postalWrap: $('quotePostalField'), whyEl: $('prevWhy'),
     onChange: function(s) {
       selectedQuote = { name: s.type, price: s.price, pts: s.pts, cov: s.covDetailed };
       $('prevName').textContent = s.type;
@@ -655,7 +715,7 @@ function initQuoteSelector() {
 function initLandingCalculator() {
   initCalcWidget({
     typesEl: $('calcTypes'), questionsEl: $('calcQuestions'), levelsEl: $('calcLevels'),
-    priceEl: $('calcPrice'), ptsEl: $('calcPts'),
+    priceEl: $('calcPrice'), ptsEl: $('calcPts'), postalWrap: $('calcPostalField'), whyEl: $('calcWhy'),
     onChange: function(s) {
       try { localStorage.setItem('wyncare_landing_quote', JSON.stringify(s)); } catch (e) {}
     }

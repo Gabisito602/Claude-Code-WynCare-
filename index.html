@@ -194,6 +194,15 @@ em.accent{font-style:normal;color:var(--gold)}
 .calc-price small:last-child{margin-left:.3rem}
 .calc-pts{font-size:.86rem;color:var(--text-2)}
 .calc-legal{font-size:.72rem;color:var(--text-3);text-align:center;margin-top:-.4rem}
+.calc-field-opt{text-transform:none;font-weight:400;color:var(--text-3);letter-spacing:0}
+.calc-postal{width:100%;max-width:190px;padding:.6rem .85rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-1);font-size:.9rem;font-family:var(--font-mono);letter-spacing:.05em}
+.calc-postal:focus{outline:none;border-color:var(--gold)}
+.calc-why{font-size:.76rem;color:var(--text-2);margin-top:-.3rem}
+.calc-why .cw-q{color:var(--gold-text);font-weight:600}
+.calc-why:empty{display:none}
+.preview-why{font-size:.74rem;color:rgba(244,242,236,.6);margin-top:.5rem;position:relative}
+.preview-why .cw-q{color:#E8C98F;font-weight:600}
+.preview-why:empty{display:none}
 @media (max-width:640px){.calc-types.type-grid{grid-template-columns:repeat(3,1fr)}}
 
 /* ==================================================================
@@ -701,6 +710,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="7" y1="9.5" x2="17" y2="9.5"/><line x1="7" y1="13" x2="13" y2="13"/></symbol>
 <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 6.5 21l5.5-3 5.5 3-2-8.5"/></symbol>
 <symbol id="i-pulse" viewBox="0 0 24 24"><polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/></symbol>
+<symbol id="i-paw" viewBox="0 0 24 24"><ellipse cx="6.5" cy="10" rx="1.7" ry="2.2"/><ellipse cx="10.5" cy="7.6" rx="1.8" ry="2.4"/><ellipse cx="14.5" cy="8.4" rx="1.8" ry="2.3"/><ellipse cx="18" cy="11.3" rx="1.6" ry="2"/><path d="M12.3 12.4c-2.4 0-4.3 1.8-4.6 3.8-.2 1.5.9 2.7 2.4 2.7.9 0 1.4-.4 2.2-.4s1.3.4 2.2.4c1.5 0 2.6-1.2 2.4-2.7-.3-2-2.2-3.8-4.6-3.8z"/></symbol>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
 <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15.5V12a1 1 0 0 1 .1-.4l1.6-3.4A2 2 0 0 1 6.5 7h2l1.8-2.3A2 2 0 0 1 11.9 4h.2a2 2 0 0 1 1.6.8L15.5 7h2a2 2 0 0 1 1.8 1.2l1.6 3.4a1 1 0 0 1 .1.4v3.5"/><path d="M2.3 15.5h19.4"/><path d="M8 7h8"/><circle cx="7" cy="15.8" r="1.7"/><circle cx="17" cy="15.8" r="1.7"/></symbol>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.7V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.7"/><path d="M10 20v-5.2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V20"/><line x1="7.3" y1="13.5" x2="8.8" y2="13.5"/></symbol>
@@ -833,10 +843,14 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
             <button class="type-card" type="button" data-type="Salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span></button>
             <button class="type-card" type="button" data-type="Vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span></button>
             <button class="type-card" type="button" data-type="Empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span></button>
-            <button class="type-card" type="button" data-type="Telemedicina" aria-pressed="false"><svg><use href="#i-video"/></svg><span class="tn">Telemedicina</span></button>
+            <button class="type-card" type="button" data-type="Mascotas" aria-pressed="false"><svg><use href="#i-paw"/></svg><span class="tn">Mascotas</span></button>
           </div>
           <div class="calc-body">
             <div class="calc-questions" id="calcQuestions"></div>
+            <div class="calc-field" id="calcPostalField" style="display:none">
+              <div class="calc-field-label">Código postal <span class="calc-field-opt">· opcional, afina el precio</span></div>
+              <input class="calc-postal" id="calcPostal" type="text" inputmode="numeric" maxlength="5" placeholder="Ej: 28001" autocomplete="postal-code">
+            </div>
             <div class="calc-field">
               <div class="calc-field-label">Nivel de cobertura</div>
               <div class="calc-levels" id="calcLevels">
@@ -849,6 +863,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
               <div class="calc-price"><small>Desde</small><span id="calcPrice">35,00€</span><small>/mes</small></div>
               <div class="calc-pts">+<span id="calcPts">700</span> WynPoints al activarlo</div>
             </div>
+            <p class="calc-why" id="calcWhy"></p>
             <a class="btn btn-primary btn-block" href="#/registro" id="calcCta">Crear cuenta y calcular mi precio exacto <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
             <p class="calc-legal">*Precio orientativo según tus respuestas. Al crear tu cuenta calculamos y validamos tu presupuesto real con la aseguradora.</p>
           </div>
@@ -1527,9 +1542,13 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
               <button class="type-card" type="button" data-name="Salud" aria-pressed="false"><svg><use href="#i-heart"/></svg><span class="tn">Salud</span><span class="tp">Desde 45€/mes</span></button>
               <button class="type-card" type="button" data-name="Vida" aria-pressed="false"><svg><use href="#i-gem"/></svg><span class="tn">Vida</span><span class="tp">Desde 15€/mes</span></button>
               <button class="type-card" type="button" data-name="Empresa" aria-pressed="false"><svg><use href="#i-building"/></svg><span class="tn">Empresa</span><span class="tp">Desde 80€/mes</span></button>
-              <button class="type-card" type="button" data-name="Telemedicina" aria-pressed="false"><svg><use href="#i-video"/></svg><span class="tn">Telemedicina</span><span class="tp">Desde 9€/mes</span></button>
+              <button class="type-card" type="button" data-name="Mascotas" aria-pressed="false"><svg><use href="#i-paw"/></svg><span class="tn">Mascotas</span><span class="tp">Desde 10€/mes</span></button>
             </div>
             <div class="calc-questions" id="quoteQuestions"></div>
+            <div class="calc-field" id="quotePostalField" style="display:none">
+              <div class="calc-field-label">Código postal <span class="calc-field-opt">· opcional</span></div>
+              <input class="calc-postal" id="quotePostal" type="text" inputmode="numeric" maxlength="5" placeholder="Ej: 28001" autocomplete="postal-code">
+            </div>
             <div class="calc-field">
               <div class="calc-field-label">Nivel de cobertura</div>
               <div class="calc-levels" id="quoteLevels">
@@ -1543,6 +1562,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
             <div class="preview-card">
               <div class="preview-label">Precio estimado</div>
               <div class="preview-price"><small>Desde</small> <span id="prevPrice">35,00€</span> <small>/mes</small></div>
+              <p class="preview-why" id="prevWhy"></p>
               <div class="preview-specs">
                 <div><span>Seguro</span><strong id="prevName">Coche</strong></div>
                 <div><span>Cobertura</span><strong id="prevCov">Cobertura completa coche</strong></div>
