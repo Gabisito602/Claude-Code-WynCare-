@@ -42,7 +42,11 @@ function offlineSupabaseClient() {
     from: function() { return chain; }
   };
 }
-const supabase = (window.supabase && window.supabase.createClient)
+// OJO: la variable NO puede llamarse "supabase" — la propia librería del CDN
+// declara una variable global con ese mismo nombre, y un const/let que choque
+// con una declaración global existente es un SyntaxError (para todo el script,
+// antes incluso de ejecutar una sola línea). Por eso se llama "sb".
+const sb = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: { autoRefreshToken: true, persistSession: true, storageKey: 'wyncare-auth', flowType: 'pkce' }
     })
@@ -150,7 +154,7 @@ document.addEventListener('click', e => {
 /* ---------- AUTH ---------- */
 async function handleLogin(email, password) {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
     currentUser = data.user;
     await loadUserData();
@@ -162,10 +166,10 @@ async function handleLogin(email, password) {
 
 async function handleRegister(name, email, password) {
   try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await sb.auth.signUp({ email, password });
     if (error) throw error;
     if (data?.user) {
-      await supabase.from('profiles').upsert({
+      await sb.from('profiles').upsert({
         id: data.user.id, email, full_name: name, created_at: new Date().toISOString()
       }, { onConflict: 'id' });
     }
@@ -178,7 +182,7 @@ async function handleRegister(name, email, password) {
 }
 
 async function handleLogout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   currentUser = null; currentProfile = null;
   document.documentElement.classList.remove('admin-mode');
   $('adminPanel')?.remove();
@@ -187,7 +191,7 @@ async function handleLogout() {
 
 async function loadUserSession() {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sb.auth.getSession();
     if (session) {
       currentUser = session.user;
       await loadUserData();
@@ -201,9 +205,9 @@ async function loadUserSession() {
 async function loadUserData() {
   if (!currentUser) return;
   try {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
     currentProfile = profile || { full_name: currentUser.email?.split('@')[0] || 'Usuario' };
-    const { data: policies } = await supabase.from('policies').select('*').eq('user_id', currentUser.id);
+    const { data: policies } = await sb.from('policies').select('*').eq('user_id', currentUser.id);
     currentPolicies = policies || [];
   } catch (err) {
     currentProfile = { full_name: currentUser.email?.split('@')[0] || 'Usuario' };
@@ -339,7 +343,7 @@ async function saveQuote() {
   var btn = $('saveQuoteBtn'); btn.disabled = true; btn.textContent = 'Guardando...';
   try {
     var ref = 'WC-' + Date.now().toString(36).toUpperCase();
-    var { error } = await supabase.from('quotes').insert({
+    var { error } = await sb.from('quotes').insert({
       user_id: currentUser.id, quote_type: selectedQuote.name, premium: selectedQuote.price,
       coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts, reference: ref, status: 'pending', created_at: new Date().toISOString()
     });
@@ -371,7 +375,7 @@ function initLoginForm() {
       var email = $('forgotEmail').value;
       $('forgotSuccess').style.display = 'block';
       $('forgotSuccess').querySelector('p').textContent = 'Si ' + email + ' est\u00e1 registrado, recibir\u00e1s instrucciones para restablecer tu contrase\u00f1a.';
-      supabase.auth.resetPasswordForEmail(email).catch(function() {});
+      sb.auth.resetPasswordForEmail(email).catch(function() {});
     });
   }
   var sq = $('saveQuoteBtn');
@@ -383,7 +387,7 @@ function initLoginForm() {
     saveBtn.addEventListener('click', async function() {
       var name = $('settName')?.value;
       if (!name || !currentUser) return;
-      await supabase.from('profiles').update({ full_name: name }).eq('id', currentUser.id);
+      await sb.from('profiles').update({ full_name: name }).eq('id', currentUser.id);
       currentProfile.full_name = name;
       updateSidebar(); updateDashboard();
       alert('Perfil actualizado \u2713');
@@ -638,7 +642,7 @@ async function adminFetch(table) {
   try {
     // Lee con la sesión del usuario; el acceso de admin lo deciden las
     // políticas RLS de Supabase, nunca una clave embebida en el cliente.
-    var { data, error } = await supabase.from(table).select('*').limit(200);
+    var { data, error } = await sb.from(table).select('*').limit(200);
     if (error) { console.warn('adminFetch(' + table + '): ' + error.message); return []; }
     return data || [];
   } catch(e) { return []; }
