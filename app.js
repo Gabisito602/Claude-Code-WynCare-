@@ -419,7 +419,7 @@ function getTier(points) {
 }
 
 function getPolicyIcon(type) {
-  const m = { 'coche': 'i-car', 'hogar': 'i-home', 'salud': 'i-heart', 'vida': 'i-gem', 'empresa': 'i-building', 'mascotas': 'i-paw', 'telemedicina': 'i-pulse' };
+  const m = { 'coche': 'i-car', 'hogar': 'i-home', 'salud': 'i-stethoscope', 'vida': 'i-life', 'empresa': 'i-building', 'mascotas': 'i-paw', 'telemedicina': 'i-pulse' };
   return m[(type || '').toLowerCase()] || 'i-shield';
 }
 
