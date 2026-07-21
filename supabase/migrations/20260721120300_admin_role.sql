@@ -51,3 +51,4 @@ create policy "admins actualizan siniestros" on public.claims
 drop policy if exists "admins ven todos los perfiles" on public.profiles;
 create policy "admins ven todos los perfiles" on public.profiles
   for select using (public.is_admin());
+
