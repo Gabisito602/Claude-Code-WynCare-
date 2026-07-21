@@ -341,18 +341,12 @@ table.data tbody tr:hover{background:var(--surface-2)}
     <h1>Panel de Administración</h1>
     <p class="sub">Acceso interno para el equipo de WynCare</p>
     <form id="gateForm">
-      <div class="field"><label>Correo electrónico</label><div class="iw"><svg class="icon"><use href="#i-mail"/></svg><input id="gateEmail" type="email" placeholder="tu@wyncare.es" value="gabriel@wyncare.es"></div></div>
-      <div class="field"><label>Contraseña</label><div class="iw"><svg class="icon"><use href="#i-lock"/></svg><input id="gatePass" type="password" placeholder="••••••••"></div></div>
-      <div class="field"><label>Rol (demo)</label><div class="iw"><svg class="icon"><use href="#i-users"/></svg>
-        <select id="gateRole">
-          <option value="Admin">Admin — acceso total</option>
-          <option value="Soporte">Soporte — sin borrar/configurar</option>
-          <option value="Solo lectura">Solo lectura</option>
-        </select>
-      </div></div>
+      <div class="field"><label>Correo electrónico</label><div class="iw"><svg class="icon"><use href="#i-mail"/></svg><input id="gateEmail" type="email" placeholder="tu@wyncare.es" autocomplete="username"></div></div>
+      <div class="field"><label>Contraseña</label><div class="iw"><svg class="icon"><use href="#i-lock"/></svg><input id="gatePass" type="password" placeholder="••••••••" autocomplete="current-password"></div></div>
+      <p id="gateError" style="display:none;color:var(--danger);font-size:.82rem;margin-top:.6rem"></p>
       <button class="btn btn-primary" type="submit" style="width:100%;margin-top:1.3rem;padding-block:.8rem">Acceder al panel</button>
     </form>
-    <p class="gate-legal">Vista de demostración. La autenticación real y los roles llegarán con Supabase.</p>
+    <p class="gate-legal">Acceso restringido al equipo de WynCare con permiso de administrador.</p>
   </div>
 </div>
 
@@ -603,9 +597,23 @@ table.data tbody tr:hover{background:var(--surface-2)}
 
 <div class="toast" id="toast"><svg class="icon"><use href="#i-alert"/></svg><span id="toastMsg"></span></div>
 
+<!-- Sin "defer": tiene que estar listo antes del script principal, que lo
+     usa nada más arrancar (comprobar sesión, gate de login). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
 "use strict";
+
+var SUPABASE_URL = 'https://gpcavoymhsivyorkxbam.supabase.co';
+var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwY2F2b3ltaHNpdnlvcmt4YmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDcwNTUsImV4cCI6MjA5OTcyMzA1NX0.XA5GglnK6gn82HvV3CL7J2xzkQsGqFuRbhvG-yFERDU';
+// Igual que en app.js: la variable no puede llamarse "supabase" (choca con
+// la global que declara la propia librería del CDN).
+var sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: { autoRefreshToken: true, persistSession: true, storageKey: 'wyncare-admin-auth' }
+    })
+  : null;
+var currentAdminUser = null;
 
 /* Escapa texto antes de meterlo en innerHTML. Con los datos mock da igual,
    pero cuando las tablas se alimenten de Supabase será obligatorio. */
@@ -613,6 +621,28 @@ function esc(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
   });
+}
+
+function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+/* Igual que en app.js: "quotes"/"policies" no guardan una referencia legible,
+   así que la fabricamos a partir del uuid para mostrarla en el panel. */
+function friendlyRef(prefix, id){ return prefix + '-' + String(id || '').replace(/-/g, '').slice(0, 8).toUpperCase(); }
+
+/* Traducción entre los valores reales de los enums de Supabase y las
+   etiquetas en español que muestra el panel. */
+var QUOTE_STATUS_LABELS = {
+  draft: 'Borrador', saved: 'Guardado', requested: 'Solicitado', converted: 'Convertido', expired: 'Expirado',
+  pending_docs: 'Pendiente documentación', in_review: 'Verificación', validated: 'Validado', rejected: 'Rechazado'
+};
+var QUOTE_STATUS_BY_LABEL = {};
+Object.keys(QUOTE_STATUS_LABELS).forEach(function(k){ QUOTE_STATUS_BY_LABEL[QUOTE_STATUS_LABELS[k]] = k; });
+
+var POLICY_STATUS_LABELS = { active: 'Activa', pending: 'Pendiente', cancelled: 'Cancelada', expired: 'Expirada' };
+
+function formatDateEs(d){
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('es-ES'); } catch (e) { return '—'; }
 }
 
 /* ---------- TEMA ---------- */
@@ -659,32 +689,77 @@ function closeModal(){
 }
 
 /* ---------- LOGIN GATE ---------- */
-var currentRole = 'Admin';
-document.getElementById('gateForm').addEventListener('submit', function(e){
-  e.preventDefault();
-  var email = document.getElementById('gateEmail').value || 'gabriel@wyncare.es';
-  currentRole = document.getElementById('gateRole').value;
-  var name = email.split('@')[0].replace(/[._-]+/g,' ');
-  name = name.replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+// Solo entra quien tenga sesión real en Supabase Y profiles.role = 'admin'
+// (ver supabase/migrations/20260721120300_admin_role.sql). Cualquier otra
+// cuenta se cierra la sesión al momento y no ve nada del panel.
+function showGateError(msg){
+  var errEl = document.getElementById('gateError');
+  if (errEl) { errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; }
+}
+
+function showAdminApp(name){
   document.getElementById('userName').textContent = name;
-  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('userRole').textContent = currentRole;
+  document.getElementById('userAvatar').textContent = (name.charAt(0) || 'A').toUpperCase();
+  document.getElementById('userRole').textContent = 'Admin';
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app').classList.add('is-active');
-  document.body.classList.toggle('is-readonly', currentRole === 'Solo lectura');
-  applyRoleRestrictions();
   animateTabIn(document.getElementById('tab-resumen'));
+}
+
+async function checkAdminAndEnter(user){
+  try {
+    var res = await sb.from('profiles').select('full_name, role').eq('id', user.id).single();
+    if (res.error || !res.data || res.data.role !== 'admin') {
+      await sb.auth.signOut();
+      currentAdminUser = null;
+      showGateError('Esta cuenta no tiene permiso de administrador.');
+      return false;
+    }
+    currentAdminUser = user;
+    showAdminApp(res.data.full_name || (user.email || '').split('@')[0] || 'Admin');
+    refreshPresupuestos();
+    refreshPolizas();
+    return true;
+  } catch (e) {
+    showGateError('No se pudo comprobar el permiso de administrador. Inténtalo de nuevo.');
+    return false;
+  }
+}
+
+document.getElementById('gateForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  showGateError('');
+  if (!sb) { showGateError('No se pudo conectar con el servidor. Revisa tu conexión.'); return; }
+  var email = document.getElementById('gateEmail').value.trim();
+  var password = document.getElementById('gatePass').value;
+  var btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Accediendo...';
+  try {
+    var { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
+    if (error) { showGateError('Email o contraseña incorrectos.'); return; }
+    await checkAdminAndEnter(data.user);
+  } catch (e2) {
+    showGateError('No se pudo conectar con el servidor. Revisa tu conexión.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Acceder al panel';
+  }
 });
-document.getElementById('logoutBtn').addEventListener('click', function(){
+
+document.getElementById('logoutBtn').addEventListener('click', async function(){
+  if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+  currentAdminUser = null;
   document.getElementById('app').classList.remove('is-active');
   document.getElementById('gate').style.display = 'flex';
 });
 
-function applyRoleRestrictions(){
-  var restrictWrite = currentRole !== 'Admin';
-  var restrictDelete = currentRole === 'Solo lectura';
-  document.querySelectorAll('[data-role-write]').forEach(function(el){ el.disabled = restrictWrite && currentRole === 'Solo lectura' ? true : el.disabled; });
-}
+// Si ya había sesión (recarga de página), entra directo sin pedir login otra vez.
+(async function checkExistingSession(){
+  if (!sb) return;
+  try {
+    var { data } = await sb.auth.getSession();
+    if (data && data.session && data.session.user) await checkAdminAndEnter(data.session.user);
+  } catch (e) {}
+})();
 
 /* ---------- DROPDOWNS ---------- */
 function setupDropdown(btnId, dropId){
@@ -745,10 +820,10 @@ document.querySelectorAll('.subtab').forEach(function(btn){
 
 /* ---------- BADGE TONES ---------- */
 var TONE_MAP = {
-  'Activo':'success','Activa':'success','Verificado':'success','Resuelto':'success','Sí':'success','Liquidada':'success','Validado':'success',
-  'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Pendiente documentación':'warning','Verificación':'warning',
-  'Cancelada':'danger','Inactivo':'danger','De baja':'danger','No':'danger','Rechazado':'danger',
-  'Pausado':'neutral',
+  'Activo':'success','Activa':'success','Verificado':'success','Resuelto':'success','Sí':'success','Liquidada':'success','Validado':'success','Convertido':'success',
+  'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Pendiente documentación':'warning','Verificación':'warning','Solicitado':'warning',
+  'Cancelada':'danger','Inactivo':'danger','De baja':'danger','No':'danger','Rechazado':'danger','Expirada':'danger','Expirado':'danger',
+  'Pausado':'neutral','Borrador':'neutral','Guardado':'neutral',
   'Admin':'gold','Oro':'gold','Platino':'gold'
 };
 function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class="badge tone-'+tone+'">'+esc(v)+'</span>'; }
@@ -757,8 +832,12 @@ function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class=
 function mountTable(containerId, cfg){
   var el = document.getElementById(containerId);
   if (!el) return;
+  // Si ya se montó antes (p. ej. al refrescar Presupuestos/Pólizas con datos
+  // reales tras el login), no reconstruimos el DOM ni volvemos a enganchar
+  // los listeners: solo repintamos filas y estadísticas con cfg actualizado.
+  if (el._wynRefresh) { el._wynRefresh(); return; }
   var uid = containerId;
-  var statsHtml = (cfg.stats || []).map(function(s){ return '<div class="tc-stat"><div class="v">'+esc(s[0])+'</div><div class="l">'+esc(s[1])+'</div></div>'; }).join('');
+  var statsHtml = (cfg.stats || []).map(function(s, i){ return '<div class="tc-stat"><div class="v" id="'+uid+'-stat-'+i+'">'+esc(s[0])+'</div><div class="l">'+esc(s[1])+'</div></div>'; }).join('');
   var html = '<div class="table-card">';
   if (statsHtml) html += '<div class="tc-stats">'+statsHtml+'</div>';
   html += '<div class="tc-head"><h3>'+cfg.title+'</h3>';
@@ -804,6 +883,13 @@ function mountTable(containerId, cfg){
     }
     if (e.target.closest('[data-row-edit]') || e.target.closest('[data-row-del]')) showToast('Esta acción se activará al conectar Supabase.');
   });
+  el._wynRefresh = function(){
+    (cfg.stats || []).forEach(function(s, i){
+      var statEl = document.getElementById(uid+'-stat-'+i);
+      if (statEl) statEl.textContent = s[0];
+    });
+    renderRows(searchInput.value);
+  };
 }
 
 /* ---------- GESTIÓN: cambio de estado + subida de documento ---------- */
@@ -838,15 +924,29 @@ function openManageModal(cfg, idx, onSaved){
   });
 
   document.getElementById('modalCancel').addEventListener('click', closeModal);
-  document.getElementById('modalSave').addEventListener('click', function(){
-    if (statusSel) row.estado = statusSel.value;
+  document.getElementById('modalSave').addEventListener('click', async function(){
+    var btn = this;
     var reasonInput = document.getElementById('modalReason');
-    if (reasonInput) row.motivo = reasonInput.value;
     var fileInput = document.getElementById('modalFile');
-    if (fileInput && fileInput.files && fileInput.files[0]) row.documento = fileInput.files[0].name;
-    closeModal();
-    onSaved();
-    showToast('Guardado localmente. Esto quedará permanente al conectar Supabase.');
+    var changes = {
+      estado: statusSel ? statusSel.value : undefined,
+      motivo: reasonInput ? reasonInput.value : undefined,
+      file: (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null
+    };
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    try {
+      if (ma.persist) await ma.persist(row, changes);
+      if (statusSel) row.estado = changes.estado;
+      if (reasonInput) row.motivo = changes.motivo;
+      if (changes.file) row.documento = changes.file.name;
+      closeModal();
+      onSaved();
+      showToast(ma.persist ? 'Guardado en Supabase.' : 'Guardado localmente. Esto quedará permanente al conectar Supabase.');
+    } catch (err) {
+      showToast('Error al guardar: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Guardar';
+    }
   });
 }
 
@@ -879,31 +979,48 @@ var D = {
   },
   polizas:{
     title:'Pólizas', addLabel:'Nueva póliza',
-    stats:[['892','pólizas activas'],['441','nuevas (6 meses)'],['12','pendientes']],
+    stats:[['—','pólizas activas'],['—','nuevas (6 meses)'],['—','pendientes']],
     columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'aseguradora',label:'Aseguradora'},{key:'prima',label:'Prima',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'renovacion',label:'Renovación',align:'right'}],
-    manageAction:{label:'Subir documento', fileLabel:'Documento de la póliza (PDF)'},
-    rows:[
-      {ref:'WC-2024-001',cliente:'Ana García',tipo:'Coche',aseguradora:'AXA',prima:'35€',estado:'Activa',renovacion:'12/03/2027',documento:'Poliza_Coche_AnaGarcia.pdf'},
-      {ref:'WC-2024-002',cliente:'Ana García',tipo:'Hogar',aseguradora:'Mapfre',prima:'22€',estado:'Activa',renovacion:'12/03/2027'},
-      {ref:'WC-2024-003',cliente:'Ana García',tipo:'Salud',aseguradora:'Sanitas',prima:'45€',estado:'Activa',renovacion:'12/03/2027'},
-      {ref:'WC-2024-004',cliente:'Ana García',tipo:'Vida',aseguradora:'Allianz',prima:'18€',estado:'Pendiente',renovacion:'—'},
-      {ref:'WC-2025-011',cliente:'Laia Ferrer',tipo:'Empresa',aseguradora:'Generali',prima:'80€',estado:'Activa',renovacion:'22/08/2026'},
-      {ref:'WC-2025-014',cliente:'Jordi Camps',tipo:'Coche',aseguradora:'AXA',prima:'38€',estado:'Cancelada',renovacion:'—'}
-    ]
+    manageAction:{
+      label:'Subir documento', fileLabel:'Documento de la póliza (PDF)',
+      persist: async function(row, changes){
+        if (!sb || !changes.file) return;
+        var path = 'policies/' + row._id + '/' + Date.now() + '_' + changes.file.name;
+        var up = await sb.storage.from('documents').upload(path, changes.file, { upsert: true });
+        if (up.error) throw up.error;
+        var signed = await sb.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365);
+        if (signed.error) throw signed.error;
+        var ins = await sb.from('policy_documents').insert({ policy_id: row._id, name: changes.file.name, url: signed.data.signedUrl });
+        if (ins.error) throw ins.error;
+      }
+    },
+    rows:[]
   },
   presupuestos:{
     title:'Presupuestos', addLabel:'Nuevo presupuesto',
-    stats:[['340','creados'],['54','pendientes de validar'],['81%','tasa de validación']],
+    stats:[['—','creados'],['—','pendientes de validar'],['—','tasa de validación']],
     columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente / contacto'},{key:'tipo',label:'Tipo'},{key:'precio',label:'Precio est.',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
-    manageAction:{label:'Gestionar presupuesto', fileLabel:'Presupuesto validado (PDF)', statusOptions:['Pendiente documentación','Verificación','Validado','Rechazado']},
-    rows:[
-      {ref:'PR-88231',cliente:'Pol Vidal',tipo:'Hogar',precio:'24€',estado:'Pendiente documentación',fecha:'Hoy'},
-      {ref:'PR-88230',cliente:'marina@mail.com',tipo:'Salud',precio:'47€',estado:'Pendiente documentación',fecha:'Hoy'},
-      {ref:'PR-88225',cliente:'Jordi Camps',tipo:'Vida',precio:'15€',estado:'Verificación',fecha:'Ayer'},
-      {ref:'PR-88219',cliente:'toni@mail.com',tipo:'Coche',precio:'33€',estado:'Validado',fecha:'Hace 3 días',documento:'Presupuesto_Coche_Toni.pdf'},
-      {ref:'PR-88201',cliente:'Núria Soler',tipo:'Empresa',precio:'95€',estado:'Rechazado',motivo:'Falta el CIF de la empresa',fecha:'Hace 5 días'},
-      {ref:'PR-88190',cliente:'elena@mail.com',tipo:'Telemedicina',precio:'9€',estado:'Validado',fecha:'Hace 1 semana',documento:'Presupuesto_Telemedicina_Elena.pdf'}
-    ]
+    manageAction:{
+      label:'Gestionar presupuesto', fileLabel:'Presupuesto validado (PDF)',
+      statusOptions:['Pendiente documentación','Verificación','Validado','Rechazado'],
+      persist: async function(row, changes){
+        if (!sb) return;
+        var updates = {};
+        if (changes.estado) updates.status = QUOTE_STATUS_BY_LABEL[changes.estado] || changes.estado;
+        updates.rejection_reason = changes.estado === 'Rechazado' ? (changes.motivo || null) : null;
+        if (changes.file) {
+          var path = 'quotes/' + row._id + '/' + Date.now() + '_' + changes.file.name;
+          var up = await sb.storage.from('documents').upload(path, changes.file, { upsert: true });
+          if (up.error) throw up.error;
+          var signed = await sb.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365);
+          if (signed.error) throw signed.error;
+          updates.document_url = signed.data.signedUrl;
+        }
+        var { error } = await sb.from('quotes').update(updates).eq('id', row._id);
+        if (error) throw error;
+      }
+    },
+    rows:[]
   },
   aseguradoras:{
     title:'Aseguradoras', addLabel:'Nueva aseguradora',
@@ -1120,6 +1237,106 @@ Object.keys(D).forEach(function(key){
     SEARCH_INDEX.push({ tab: PARENT_TAB[key] || key, sub:key, section: SECTION_LABELS[key], primary: String(r[primaryKey]), secondary: secondaryKey ? String(r[secondaryKey]) : '' });
   });
 });
+
+// Reconstruye las entradas del buscador global para una sección concreta
+// (se usa tras refrescar Presupuestos/Pólizas con datos reales de Supabase,
+// que llegan después de que este índice ya se construyó una vez con filas vacías).
+function refreshSearchIndexSection(key){
+  var cfg = D[key];
+  var primaryKey = cfg.columns[0].key;
+  var secondaryKey = cfg.columns[1] ? cfg.columns[1].key : null;
+  SEARCH_INDEX = SEARCH_INDEX.filter(function(item){ return item.sub !== key; });
+  cfg.rows.forEach(function(r){
+    SEARCH_INDEX.push({ tab: PARENT_TAB[key] || key, sub:key, section: SECTION_LABELS[key], primary: String(r[primaryKey]), secondary: secondaryKey ? String(r[secondaryKey]) : '' });
+  });
+}
+
+/* ---------- DATOS REALES: Presupuestos y Pólizas ---------- */
+// "quotes"/"policies" no tienen una FK directa a "profiles" (las dos
+// referencian auth.users por separado), así que PostgREST no puede
+// embeber el perfil automáticamente: se piden por separado y se cruzan
+// aquí mismo por user_id.
+async function fetchProfilesByIds(userIds){
+  var map = {};
+  var ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (!sb || !ids.length) return map;
+  var res = await sb.from('profiles').select('id, full_name, email').in('id', ids);
+  if (res.error) throw res.error;
+  (res.data || []).forEach(function(p){ map[p.id] = p; });
+  return map;
+}
+
+async function refreshPresupuestos(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('quotes').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var quotes = res.data || [];
+    var profiles = await fetchProfilesByIds(quotes.map(function(q){ return q.user_id; }));
+    var rows = quotes.map(function(q){
+      var profile = profiles[q.user_id];
+      var fd = q.form_data || {};
+      return {
+        ref: friendlyRef('WC', q.id),
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        tipo: capitalize(q.type || '—'),
+        precio: (q.premium != null ? 'Desde ' + q.premium + '€' : '—'),
+        estado: QUOTE_STATUS_LABELS[q.status] || q.status || '—',
+        fecha: formatDateEs(q.created_at),
+        motivo: q.rejection_reason || '',
+        documento: q.document_url ? 'Presupuesto validado.pdf' : '',
+        _id: q.id,
+        _userId: q.user_id
+      };
+    });
+    var cfg = D.presupuestos;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var pendientes = rows.filter(function(r){ return r.estado !== 'Validado' && r.estado !== 'Rechazado'; }).length;
+    var validados = rows.filter(function(r){ return r.estado === 'Validado'; }).length;
+    var tasa = rows.length ? Math.round((validados / rows.length) * 100) + '%' : '—';
+    cfg.stats = [[String(rows.length), 'creados'], [String(pendientes), 'pendientes de validar'], [tasa, 'tasa de validación']];
+    mountTable('mount-presupuestos', cfg);
+    refreshSearchIndexSection('presupuestos');
+  } catch (err) {
+    showToast('No se pudieron cargar los presupuestos: ' + err.message);
+  }
+}
+
+async function refreshPolizas(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('policies').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var policies = res.data || [];
+    var profiles = await fetchProfilesByIds(policies.map(function(p){ return p.user_id; }));
+    var rows = policies.map(function(p){
+      var profile = profiles[p.user_id];
+      return {
+        ref: p.reference || friendlyRef('WC', p.id),
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        tipo: capitalize(p.type || '—'),
+        aseguradora: '—',
+        prima: (p.premium != null ? p.premium + '€/mes' : '—'),
+        estado: POLICY_STATUS_LABELS[p.status] || capitalize(p.status) || '—',
+        renovacion: '—',
+        _id: p.id,
+        _userId: p.user_id
+      };
+    });
+    var cfg = D.polizas;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var activas = rows.filter(function(r){ return r.estado === 'Activa'; }).length;
+    var pendientes = rows.filter(function(r){ return r.estado === 'Pendiente'; }).length;
+    cfg.stats = [[String(rows.length), 'pólizas'], [String(activas), 'activas'], [String(pendientes), 'pendientes']];
+    mountTable('mount-polizas', cfg);
+    refreshSearchIndexSection('polizas');
+  } catch (err) {
+    showToast('No se pudieron cargar las pólizas: ' + err.message);
+  }
+}
+
 var gsInput = document.getElementById('globalSearch');
 var gsResults = document.getElementById('gsearchResults');
 gsInput.addEventListener('input', function(){
