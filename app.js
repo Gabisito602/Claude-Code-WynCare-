@@ -122,7 +122,7 @@ function toggleTheme() { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
 document.addEventListener('click', e => { const btn = e.target.closest('[data-theme-toggle]'); if (btn) toggleTheme(); });
 
 /* ---------- ROUTER ---------- */
-const ROUTES = { '/': 'view-home', '/login': 'view-login', '/registro': 'view-registro', '/recuperar': 'view-recuperar', '/404': 'view-404' };
+const ROUTES = { '/': 'view-home', '/login': 'view-login', '/registro': 'view-registro', '/recuperar': 'view-recuperar', '/terminos': 'view-terminos', '/privacidad': 'view-privacidad', '/cookies': 'view-cookies', '/404': 'view-404' };
 
 function navigate(hash) {
   const path = hash.replace(/^#/, '') || '/';
@@ -604,6 +604,34 @@ document.addEventListener('click', function(e) {
 (function() {
   var yearEl = $('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
+})();
+
+/* ---------- COOKIE CONSENT ---------- */
+(function() {
+  var KEY = 'wyncare-cookie-consent'; // 'all' | 'necessary'
+  function loadGoogleFonts() {
+    if (document.getElementById('gfonts-link')) return;
+    var link = document.createElement('link');
+    link.id = 'gfonts-link'; link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap';
+    document.head.appendChild(link);
+  }
+  var stored = localStorage.getItem(KEY);
+  if (stored === 'all') loadGoogleFonts();
+
+  var banner = $('cookieBanner');
+  if (!stored && banner) banner.classList.add('is-shown');
+
+  var acceptBtn = $('cookieAccept'), rejectBtn = $('cookieReject');
+  if (acceptBtn) acceptBtn.addEventListener('click', function() {
+    localStorage.setItem(KEY, 'all');
+    loadGoogleFonts();
+    if (banner) banner.classList.remove('is-shown');
+  });
+  if (rejectBtn) rejectBtn.addEventListener('click', function() {
+    localStorage.setItem(KEY, 'necessary');
+    if (banner) banner.classList.remove('is-shown');
+  });
 })();
 
 /* ---------- ADMIN PANEL ---------- */

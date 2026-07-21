@@ -29,7 +29,17 @@ try{var _t=localStorage.getItem('wyncare-theme');if(_t)document.documentElement.
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230A0F1C'/%3E%3Cpath d='M12 4l6 2.4v5.2c0 4.3-2.9 6.9-6 7.8-3.1-.9-6-3.5-6-7.8V6.4L12 4z' fill='none' stroke='%23D8B573' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Google Fonts se carga solo si aceptas cookies no esenciales (ver banner + app.js).
+     Sin aceptar, la web usa la tipografía del sistema (fallback ya definido en --font-ui). -->
+<script>
+try{
+  if (localStorage.getItem('wyncare-cookie-consent') === 'all') {
+    var l=document.createElement('link'); l.rel='stylesheet';
+    l.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap';
+    document.head.appendChild(l);
+  }
+}catch(e){}
+</script>
 <link rel="stylesheet" href="styles.css?v=1">
 <style>
 /* ==================================================================
@@ -366,6 +376,31 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 .view-404 h2{margin-top:.5rem}
 .view-404 p{margin-top:.7rem;color:var(--text-2);max-width:24rem;margin-inline:auto}
 .view-404 .btn{margin-top:1.8rem}
+
+/* ==================================================================
+   13b. LEGAL PAGES
+   ================================================================== */
+.legal-topbar{padding:1.3rem clamp(1.25rem,4vw,2.5rem);border-bottom:1px solid var(--border)}
+.legal-content{max-width:760px;margin-inline:auto;padding:clamp(2.5rem,6vw,4rem) clamp(1.25rem,4vw,2.5rem) 5rem}
+.legal-content .updated{color:var(--text-3);font-size:.85rem;margin-bottom:2.5rem}
+.legal-content h2{margin-top:2.2rem;margin-bottom:.8rem;font-size:1.2rem}
+.legal-content h3{margin-top:1.4rem;margin-bottom:.5rem;font-size:1rem}
+.legal-content p{color:var(--text-2);line-height:1.7;margin-bottom:1rem;font-size:.95rem}
+.legal-content ul{margin:0 0 1rem 1.2rem;padding:0;list-style:disc;color:var(--text-2);line-height:1.7;font-size:.95rem}
+.legal-content li{margin-bottom:.4rem}
+.legal-content a{color:var(--gold);font-weight:600}
+.legal-content strong{color:var(--text-1)}
+.legal-pending{background:rgba(var(--gold-rgb),.1);border:1px dashed rgba(var(--gold-rgb),.45);border-radius:var(--radius-sm);padding:.05rem .5rem;font-family:var(--font-mono);font-size:.85em;color:var(--gold);white-space:nowrap}
+
+/* ==================================================================
+   13c. COOKIE BANNER
+   ================================================================== */
+.cookie-banner{position:fixed;left:1rem;right:1rem;bottom:1rem;z-index:95;max-width:640px;margin-inline:auto;background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-2);padding:1.15rem 1.3rem;display:none}
+.cookie-banner.is-shown{display:block}
+.cookie-banner p{font-size:.85rem;color:var(--text-2);line-height:1.55;margin:0}
+.cookie-banner p a{color:var(--gold);font-weight:600}
+.cookie-banner-actions{display:flex;gap:.6rem;margin-top:.9rem;flex-wrap:wrap}
+@media (max-width:480px){.cookie-banner{left:.6rem;right:.6rem;bottom:.6rem;padding:1rem}}
 
 /* ==================================================================
    14. APP SHELL (área cliente)
@@ -959,7 +994,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         <span class="mark" style="width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" style="width:18px;height:18px;stroke:var(--gold-ink)"><use href="#i-shield"/></svg></span>
         <p>Simplificamos tu protección mediante tecnología e inteligencia artificial.</p>
       </div>
-      <div class="footer-links"><a href="#">Términos</a><a href="#">Privacidad</a><a href="#">Cookies</a></div>
+      <div class="footer-links"><a href="#/terminos">Términos</a><a href="#/privacidad">Privacidad</a><a href="#/cookies">Cookies</a></div>
       <div class="footer-meta"><span>© <span id="year"></span> WynCare</span><span>·</span><span>contacto@wyncare.es</span></div>
     </div>
   </footer>
@@ -1025,7 +1060,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <button class="btn btn-primary btn-block" type="submit" style="margin-top:1.3rem">Crear cuenta</button>
         </form>
         <p class="auth-switch">¿Ya tienes cuenta? <a href="#/login">Acceder</a></p>
-        <p class="auth-legal">Al continuar aceptas los <a href="#">Términos</a> y la <a href="#">Privacidad</a>.</p>
+        <p class="auth-legal">Al continuar aceptas los <a href="#/terminos">Términos</a> y la <a href="#/privacidad">Privacidad</a>.</p>
       </div>
     </div>
   </div>
@@ -1068,6 +1103,118 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
       <p>No encontramos lo que buscas. Vuelve al inicio o accede a tu Área Cliente.</p>
       <a class="btn btn-primary" href="#/">Volver al inicio</a>
     </div>
+  </div>
+</div>
+
+<!-- ============================== VIEW: TÉRMINOS ============================== -->
+<div class="view" id="view-terminos">
+  <div class="legal-topbar container"><a class="auth-back" href="#/"><svg class="icon" style="width:15px;height:15px"><use href="#i-arrow-left"/></svg>Volver a la web</a></div>
+  <div class="legal-content">
+    <h1>Términos de Uso</h1>
+    <p class="updated">Última actualización: 21 de julio de 2026</p>
+
+    <h2>1. Quiénes somos</h2>
+    <p>WynCare (<span class="legal-pending">Razón social pendiente</span>, con NIF <span class="legal-pending">CIF pendiente</span> y domicilio en <span class="legal-pending">dirección pendiente</span>) es una plataforma tecnológica que facilita la comparación, contratación y gestión de seguros. <strong>WynCare no es una compañía aseguradora</strong>: actúa como intermediario/tecnología de acceso a productos de aseguradoras terceras (AXA, Mapfre, Sanitas, Allianz, Generali).</p>
+
+    <h2>2. Aceptación de estos términos</h2>
+    <p>Al crear una cuenta o usar wyncare.es aceptas estos Términos de Uso y nuestra <a href="#/privacidad">Política de Privacidad</a>. Si no estás de acuerdo, no debes utilizar la plataforma.</p>
+
+    <h2>3. Naturaleza del servicio</h2>
+    <p>WynCare te muestra comparativas orientativas y gestiona la solicitud de contratación en tu nombre. El contrato de seguro final se formaliza con la aseguradora correspondiente, sujeto a sus condiciones generales, particulares y a la aceptación del riesgo por su parte. Los precios mostrados en cotizaciones son estimaciones y pueden variar tras la validación de la aseguradora.</p>
+
+    <h2>4. Tu cuenta</h2>
+    <ul>
+      <li>Eres responsable de la veracidad de los datos que nos facilitas y de mantener tu contraseña en secreto.</li>
+      <li>Debes ser mayor de edad para registrarte.</li>
+      <li>Puedes solicitar la baja de tu cuenta en cualquier momento desde Ajustes o escribiéndonos.</li>
+    </ul>
+
+    <h2>5. Programa WynPoints</h2>
+    <p>Los WynPoints son puntos de fidelización sin valor monetario, canjeables por las recompensas disponibles en la plataforma en cada momento. WynCare puede modificar el catálogo de recompensas, el ritmo de acumulación o los niveles del programa, informando con antelación razonable de cambios sustanciales.</p>
+
+    <h2>6. Teddy (asistente con IA)</h2>
+    <p>Teddy es un asistente automatizado orientativo. Sus respuestas no constituyen asesoramiento legal, médico ni financiero vinculante; ante dudas sobre coberturas o exclusiones, consulta siempre las condiciones de tu póliza o a un asesor humano.</p>
+
+    <h2>7. Propiedad intelectual</h2>
+    <p>El diseño, marca, textos y código de wyncare.es son propiedad de WynCare o se usan bajo licencia. No está permitida su reproducción sin autorización.</p>
+
+    <h2>8. Limitación de responsabilidad</h2>
+    <p>WynCare no es responsable de decisiones de suscripción, siniestros o coberturas que dependan exclusivamente de la aseguradora. Responderemos por el correcto funcionamiento de la plataforma y la gestión diligente de tu solicitud.</p>
+
+    <h2>9. Legislación aplicable</h2>
+    <p>Estos términos se rigen por la legislación española. Para cualquier controversia, las partes se someten a los juzgados y tribunales que correspondan según la normativa de protección de consumidores.</p>
+
+    <h2>10. Contacto</h2>
+    <p>Para cualquier duda sobre estos términos: <a href="mailto:contacto@wyncare.es">contacto@wyncare.es</a>.</p>
+  </div>
+</div>
+
+<!-- ============================== VIEW: PRIVACIDAD ============================== -->
+<div class="view" id="view-privacidad">
+  <div class="legal-topbar container"><a class="auth-back" href="#/"><svg class="icon" style="width:15px;height:15px"><use href="#i-arrow-left"/></svg>Volver a la web</a></div>
+  <div class="legal-content">
+    <h1>Política de Privacidad</h1>
+    <p class="updated">Última actualización: 21 de julio de 2026</p>
+
+    <h2>1. Responsable del tratamiento</h2>
+    <p><span class="legal-pending">Razón social pendiente</span>, NIF <span class="legal-pending">CIF pendiente</span>, domicilio en <span class="legal-pending">dirección pendiente</span>. Contacto: <a href="mailto:contacto@wyncare.es">contacto@wyncare.es</a>.</p>
+
+    <h2>2. Qué datos recopilamos</h2>
+    <ul>
+      <li><strong>Datos de registro:</strong> nombre, correo electrónico y contraseña (cifrada).</li>
+      <li><strong>Datos de cotización/contratación:</strong> los necesarios para calcular y tramitar tu seguro (según el tipo de póliza).</li>
+      <li><strong>Datos de uso:</strong> interacciones con la plataforma y con Teddy, WynPoints acumulados y canjeados.</li>
+    </ul>
+
+    <h2>3. Finalidad y base legal</h2>
+    <ul>
+      <li>Gestionar tu cuenta y prestarte el servicio — <strong>ejecución del contrato</strong>.</li>
+      <li>Tramitar cotizaciones y pólizas con las aseguradoras — <strong>ejecución del contrato</strong> e <strong>interés legítimo</strong>.</li>
+      <li>Comunicaciones sobre tu cuenta, renovaciones y WynPoints — <strong>ejecución del contrato</strong>.</li>
+      <li>Comunicaciones comerciales, si las aceptas — <strong>consentimiento</strong> (revocable en Ajustes).</li>
+    </ul>
+
+    <h2>4. Con quién compartimos tus datos</h2>
+    <p>Usamos <strong>Supabase</strong> (base de datos y autenticación) como encargado de tratamiento, y compartimos los datos estrictamente necesarios con la aseguradora con la que contrates, para formalizar y gestionar tu póliza. No vendemos tus datos a terceros.</p>
+
+    <h2>5. Conservación</h2>
+    <p>Conservamos tus datos mientras mantengas una cuenta activa y, tras darte de baja, durante los plazos legales de prescripción de responsabilidades (fiscal, mercantil y de seguros).</p>
+
+    <h2>6. Tus derechos</h2>
+    <p>Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad escribiendo a <a href="mailto:contacto@wyncare.es">contacto@wyncare.es</a>. También puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>
+
+    <h2>7. Seguridad</h2>
+    <p>Aplicamos medidas técnicas y organizativas razonables (cifrado en tránsito, control de acceso por roles) para proteger tus datos.</p>
+
+    <h2>8. Menores de edad</h2>
+    <p>El servicio está dirigido a mayores de 18 años. No recopilamos conscientemente datos de menores.</p>
+
+    <h2>9. Cambios en esta política</h2>
+    <p>Podemos actualizar esta política; publicaremos la fecha de la última revisión al inicio de esta página.</p>
+  </div>
+</div>
+
+<!-- ============================== VIEW: COOKIES ============================== -->
+<div class="view" id="view-cookies">
+  <div class="legal-topbar container"><a class="auth-back" href="#/"><svg class="icon" style="width:15px;height:15px"><use href="#i-arrow-left"/></svg>Volver a la web</a></div>
+  <div class="legal-content">
+    <h1>Política de Cookies</h1>
+    <p class="updated">Última actualización: 21 de julio de 2026</p>
+
+    <h2>1. Qué son las cookies</h2>
+    <p>Son pequeños ficheros que se guardan en tu navegador para recordar información entre visitas.</p>
+
+    <h2>2. Qué usamos en wyncare.es</h2>
+    <ul>
+      <li><strong>Necesarias (siempre activas):</strong> mantener tu sesión iniciada (Supabase) y recordar tu preferencia de tema claro/oscuro. No requieren consentimiento porque son imprescindibles para el servicio que pides.</li>
+      <li><strong>Funcionales/terceros (con tu consentimiento):</strong> carga de las tipografías de Google Fonts. Si no las aceptas, la web funciona igual con una tipografía del sistema.</li>
+    </ul>
+
+    <h2>3. Cómo gestionar tu preferencia</h2>
+    <p>Puedes cambiar tu elección cuando quieras borrando los datos de navegación de este sitio en los ajustes de tu navegador, lo que volverá a mostrarte el aviso de cookies.</p>
+
+    <h2>4. Cambios</h2>
+    <p>Si añadimos nuevas cookies (por ejemplo, analítica), actualizaremos esta política y el aviso correspondiente.</p>
   </div>
 </div>
 
@@ -1262,6 +1409,14 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
   <div class="teddy-input-row">
     <textarea id="teddyInput" rows="1" placeholder="Escribe a Teddy…"></textarea>
     <button class="teddy-send" type="button" id="teddySend" aria-label="Enviar"><svg class="icon"><use href="#i-send"/></svg></button>
+  </div>
+</div>
+
+<div class="cookie-banner" id="cookieBanner" role="dialog" aria-label="Preferencias de cookies">
+  <p>Usamos cookies necesarias para que funcione tu sesión y, si nos das permiso, para cargar las tipografías de Google. Más info en la <a href="#/cookies">Política de Cookies</a>.</p>
+  <div class="cookie-banner-actions">
+    <button class="btn btn-quiet btn-sm" id="cookieReject" type="button">Solo necesarias</button>
+    <button class="btn btn-primary btn-sm" id="cookieAccept" type="button">Aceptar todas</button>
   </div>
 </div>
 
