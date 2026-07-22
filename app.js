@@ -59,7 +59,7 @@ let currentUser = null;
 let currentProfile = null;
 let currentPolicies = [];
 let currentPolicyDocuments = [];
-let selectedQuote = { name: 'Coche', price: 35, pts: 700, cov: 'Cobertura completa coche', level: 'Estándar', answers: {}, extra: {}, people: [] };
+let selectedQuote = { name: 'Coche', price: 35, pts: 35, cov: 'Cobertura completa coche', level: 'Estándar', answers: {}, extra: {}, people: [] };
 let quoteCalcWidget = null;
 
 /* ---------- PRESUPUESTOS: estados del ciclo de validación ---------- */
@@ -152,7 +152,7 @@ function initQuotesViewToggle() {
 // Telemedicina ya no está aquí: es una ventaja de WynCare+ que se contrata
 // aparte, no un seguro que se compare en este widget.
 const CALC_TYPES = {
-  Coche: { cov: 'Cobertura completa coche', base: 35, pts: 700, extraFields: [
+  Coche: { cov: 'Cobertura completa coche', base: 35, ptsRate: 1, extraFields: [
     { key: 'postal', kind: 'postal', label: 'Código postal', hint: 'opcional, afina el precio',
       placeholder: 'Ej: 28001', maxlength: 5, inputmode: 'numeric', autocomplete: 'postal-code' },
     { key: 'matricula', kind: 'plate', label: 'Matrícula', hint: 'opcional, la usaremos al validar tu póliza',
@@ -173,7 +173,7 @@ const CALC_TYPES = {
       { label: 'Menos de 2 años', mult: 1.4 }
     ]}
   ]},
-  Hogar: { cov: 'Cobertura completa hogar', base: 22, pts: 600, extraFields: [
+  Hogar: { cov: 'Cobertura completa hogar', base: 22, ptsRate: 1, extraFields: [
     { key: 'postal', kind: 'postal', label: 'Código postal', hint: 'opcional, afina el precio',
       placeholder: 'Ej: 28001', maxlength: 5, inputmode: 'numeric', autocomplete: 'postal-code' },
     { key: 'metros', kind: 'size', label: 'Metros cuadrados', hint: 'opcional, afina el precio',
@@ -194,7 +194,7 @@ const CALC_TYPES = {
   // la edad del titular (ver computeQuote en initCalcWidget) en vez de
   // multiplicarse — así el coste sube con la edad real de cada persona, no
   // con un factor "Familia" inventado sin relación con quién forma la familia.
-  Salud: { cov: 'Cobertura completa salud', base: 45, pts: 1500,
+  Salud: { cov: 'Cobertura completa salud', base: 45, ptsRate: 1.5,
     peopleList: { questionKey: 'personas', ageQuestionKey: 'edad' },
     questions: [
     { key: 'edad', label: 'Edad del asegurado principal', options: [
@@ -212,7 +212,7 @@ const CALC_TYPES = {
       { label: 'Sin copago', mult: 1.15 }
     ]}
   ]},
-  Vida: { cov: 'Cobertura completa vida', base: 15, pts: 2500, questions: [
+  Vida: { cov: 'Cobertura completa vida', base: 15, ptsRate: 2, questions: [
     { key: 'edad', label: 'Edad', options: [
       { label: 'Hasta 35', mult: 1 },
       { label: '36-50', mult: 1.4 },
@@ -406,8 +406,10 @@ function initCalcWidget(opts) {
     });
     // El nivel y las respuestas mueven precio Y puntos; los campos extra que
     // afinan por zona/tamaño solo afinan el PRECIO (por eso pts se calcula
-    // antes de aplicarlos).
-    var pts = Math.round(cfg.pts * mult);
+    // antes de aplicarlos). Coche/Hogar/Salud/Vida usan la tasa real
+    // "X WynPoints por cada 1€ de prima mensual" (cfg.ptsRate); Empresa y
+    // Mascotas, sin tasa publicada todavía, siguen con el valor fijo cfg.pts.
+    var pts = cfg.ptsRate ? Math.round(cfg.base * mult * cfg.ptsRate) : Math.round(cfg.pts * mult);
     var extraMult = 1;
     (cfg.extraFields || []).forEach(function(f) {
       var fn = EXTRA_FIELD_MULT[f.kind];
@@ -444,6 +446,10 @@ function initCalcWidget(opts) {
   function revealResult(quote) {
     opts.priceEl.textContent = formatCurrency(quote.price) + '€';
     if (opts.ptsEl) opts.ptsEl.textContent = quote.pts.toLocaleString();
+    if (opts.ptsSuffixEl) {
+      var hasRate = !!CALC_TYPES[quote.type].ptsRate;
+      opts.ptsSuffixEl.textContent = hasRate ? ' al mes' : ' al activarlo';
+    }
     if (whyEl) whyEl.innerHTML = '<span class="cw-q">¿Por qué este precio?</span> ' + esc(quote.detail.toLowerCase() + ' · cobertura ' + quote.level.toLowerCase());
     state.phase = 'revealed';
     if (gateEl) gateEl.style.display = 'none';
@@ -896,10 +902,16 @@ function updateWynpointsTab() {
   }
   const earnList = qs('#tab-wynpoints .wp-earn');
   if (earnList && currentPolicies.length > 0) {
-    const pm = { 'coche': 700, 'hogar': 600, 'salud': 1500, 'vida': 2500, 'empresa': 3500, 'telemedicina': 0 };
+    // Misma tasa que la calculadora (CALC_TYPES.ptsRate): X WynPoints por
+    // cada 1€ de prima mensual. Empresa/mascotas, sin tasa publicada, se
+    // quedan con un valor fijo de referencia.
+    const rate = { 'coche': 1, 'hogar': 1, 'salud': 1.5, 'vida': 2 };
+    const flat = { 'empresa': 3500, 'telemedicina': 0 };
     earnList.innerHTML = currentPolicies.map(p => {
-      const pts2 = pm[(p.type || p.policy_type || '').toLowerCase()] || 500;
-      return '<div><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg><span class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</span><span class="pt">+' + pts2 + ' pts</span></div>';
+      const type = (p.type || p.policy_type || '').toLowerCase();
+      const hasRate = rate[type] != null;
+      const pts2 = hasRate ? Math.round(parseFloat(p.premium || 0) * rate[type]) : (flat[type] != null ? flat[type] : 500);
+      return '<div><svg><use href="#' + getPolicyIcon(p.type || p.policy_type) + '"/></svg><span class="nm">' + esc(p.type || p.policy_type || 'Seguro') + '</span><span class="pt">+' + pts2 + (hasRate ? ' pts/mes' : ' pts') + '</span></div>';
     }).join('');
   }
 }
@@ -935,7 +947,7 @@ function initQuoteSelector() {
 function initLandingCalculator() {
   initCalcWidget({
     typesEl: $('calcTypes'), questionsEl: $('calcQuestions'), levelsEl: $('calcLevels'),
-    priceEl: $('calcPrice'), ptsEl: $('calcPts'), extraFieldsEl: $('calcExtraFields'),
+    priceEl: $('calcPrice'), ptsEl: $('calcPts'), ptsSuffixEl: $('calcPtsSuffix'), extraFieldsEl: $('calcExtraFields'),
     gateEl: $('calcGate'), resultWrap: $('calcResultWrap'), whyEl: $('calcWhy'),
     onChange: function(s) {
       try { localStorage.setItem('wyncare_landing_quote', JSON.stringify(s)); } catch (e) {}
@@ -1167,7 +1179,7 @@ function initRewards() {
 /* ---------- TEDDY CHAT ---------- */
 var teddyResponses = [
   { match: /seguro/i, text: 'Depende de lo que necesites proteger. \u00bfCoche, hogar, salud, vida o empresa? Puedo darte una estimaci\u00f3n r\u00e1pida.' },
-  { match: /wynpoints|punto/i, text: 'Los WynPoints se acumulan con cada seguro activo. Coche \u2192 700 pts, Hogar \u2192 600 pts, Salud \u2192 1.500 pts, Vida \u2192 2.500 pts. \u00a1Canj\u00e9alos por recompensas!' },
+  { match: /wynpoints|punto/i, text: 'Los WynPoints se acumulan con cada seguro activo, seg\u00fan tu prima: Coche y Hogar 1 WynPoint por cada 1\u20ac, Salud 1,5 y Vida 2. \u00a1Canj\u00e9alos por recompensas!' },
   { match: /asesor|humano|hablar/i, text: 'Puedo conectar con un asesor. Dime tu n\u00famero y te llamamos en horario comercial (L-V 9:00-18:00).' },
   { match: /hola|buenas|hey|b.*d[i\u00ed]a/i, text: '\u00a1Hola! Soy Teddy \ud83d\udc3b, tu asistente de WynCare. \u00bfEn qu\u00e9 puedo ayudarte?' },
 ];
