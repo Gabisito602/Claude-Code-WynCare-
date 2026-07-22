@@ -186,7 +186,9 @@ em.accent{font-style:normal;color:var(--gold)}
 .calc-qopts{display:flex;gap:.4rem;flex-wrap:wrap}
 .calc-qopts .calc-level{flex:none;padding:.55rem 1rem}
 .calc-questions{display:flex;flex-direction:column;gap:1rem}
-.quote-form > .calc-questions,.quote-form > .calc-field{margin-top:1rem}
+.calc-extra-fields{display:flex;flex-direction:column;gap:1rem}
+.calc-extra-fields:empty{display:none}
+.quote-form > .calc-questions,.quote-form > .calc-extra-fields,.quote-form > .calc-field,.quote-form > .calc-gate{margin-top:1rem}
 .calc-result{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
 .calc-price{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:var(--gold)}
 .calc-price small{font-size:1rem;color:var(--text-3);font-weight:400}
@@ -195,14 +197,34 @@ em.accent{font-style:normal;color:var(--gold)}
 .calc-pts{font-size:.86rem;color:var(--text-2)}
 .calc-legal{font-size:.72rem;color:var(--text-3);text-align:center;margin-top:-.4rem}
 .calc-field-opt{text-transform:none;font-weight:400;color:var(--text-3);letter-spacing:0}
-.calc-postal{width:100%;max-width:190px;padding:.6rem .85rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-1);font-size:.9rem;font-family:var(--font-mono);letter-spacing:.05em}
-.calc-postal:focus{outline:none;border-color:var(--gold)}
+.calc-extra-input{width:100%;max-width:190px;padding:.6rem .85rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-md);background:var(--surface);color:var(--text-1);font-size:.9rem;font-family:var(--font-mono);letter-spacing:.05em}
+.calc-extra-input:focus{outline:none;border-color:var(--gold)}
 .calc-why{font-size:.76rem;color:var(--text-2);margin-top:-.3rem}
 .calc-why .cw-q{color:var(--gold-text);font-weight:600}
 .calc-why:empty{display:none}
 .preview-why{font-size:.74rem;color:rgba(244,242,236,.6);margin-top:.5rem;position:relative}
 .preview-why .cw-q{color:#E8C98F;font-weight:600}
 .preview-why:empty{display:none}
+
+/* Lista dinámica "edad de las demás personas" (Salud) */
+.calc-people{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
+.calc-person-row{display:flex;align-items:center;gap:.6rem}
+.calc-person-row .calc-qopts{flex:1}
+.calc-add-person{margin-top:.7rem}
+
+/* Gate "Calcular precio": botón + estado de espera con spinner */
+.calc-gate{display:flex;flex-direction:column;gap:.7rem}
+.calc-gate-status{display:flex;align-items:center;gap:.6rem;font-size:.84rem;color:var(--text-2);justify-content:center}
+.calc-gate-status[hidden]{display:none}
+.calc-spinner{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid var(--border-strong);border-top-color:var(--gold);animation:calc-spin .8s linear infinite}
+@keyframes calc-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.calc-spinner{animation:none;border-top-color:var(--border-strong)}}
+.preview-card .calc-gate-status{color:rgba(244,242,236,.6)}
+.preview-card .calc-spinner{border-color:rgba(255,255,255,.25);border-top-color:#E8C98F}
+
+/* El resultado (precio + "por qué" + CTA) queda oculto hasta que se calcula */
+.calc-result-wrap{display:none;flex-direction:column;gap:1rem}
+.calc-result-wrap.is-shown{display:flex}
 @media (max-width:640px){.calc-types.type-grid{grid-template-columns:repeat(3,1fr)}}
 
 /* ==================================================================
@@ -851,10 +873,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           </div>
           <div class="calc-body">
             <div class="calc-questions" id="calcQuestions"></div>
-            <div class="calc-field" id="calcPostalField" style="display:none">
-              <div class="calc-field-label">Código postal <span class="calc-field-opt">· opcional, afina el precio</span></div>
-              <input class="calc-postal" id="calcPostal" type="text" inputmode="numeric" maxlength="5" placeholder="Ej: 28001" autocomplete="postal-code">
-            </div>
+            <div class="calc-extra-fields" id="calcExtraFields"></div>
             <div class="calc-field">
               <div class="calc-field-label">Nivel de cobertura</div>
               <div class="calc-levels" id="calcLevels">
@@ -863,12 +882,15 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
                 <button class="calc-level" type="button" data-level="Completa" aria-pressed="false">Completa</button>
               </div>
             </div>
-            <div class="calc-result">
-              <div class="calc-price"><small>Desde</small><span id="calcPrice">35,00€</span><small>/mes</small></div>
-              <div class="calc-pts">+<span id="calcPts">700</span> WynPoints al activarlo</div>
+            <div class="calc-gate" id="calcGate"></div>
+            <div class="calc-result-wrap" id="calcResultWrap">
+              <div class="calc-result">
+                <div class="calc-price"><small>Desde</small><span id="calcPrice">35,00€</span><small>/mes</small></div>
+                <div class="calc-pts">+<span id="calcPts">700</span> WynPoints al activarlo</div>
+              </div>
+              <p class="calc-why" id="calcWhy"></p>
+              <a class="btn btn-primary btn-block" href="#/registro" id="calcCta">Crear cuenta y calcular mi precio exacto <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
             </div>
-            <p class="calc-why" id="calcWhy"></p>
-            <a class="btn btn-primary btn-block" href="#/registro" id="calcCta">Crear cuenta y calcular mi precio exacto <svg class="icon" style="width:16px;height:16px"><use href="#i-arrow"/></svg></a>
             <p class="calc-legal">*Precio orientativo según tus respuestas. Al crear tu cuenta calculamos y validamos tu presupuesto real con la aseguradora.</p>
           </div>
         </div>
@@ -1549,10 +1571,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
               <button class="type-card" type="button" data-name="Mascotas" aria-pressed="false"><svg><use href="#i-paw"/></svg><span class="tn">Mascotas</span><span class="tp">Desde 10€/mes</span></button>
             </div>
             <div class="calc-questions" id="quoteQuestions"></div>
-            <div class="calc-field" id="quotePostalField" style="display:none">
-              <div class="calc-field-label">Código postal <span class="calc-field-opt">· opcional</span></div>
-              <input class="calc-postal" id="quotePostal" type="text" inputmode="numeric" maxlength="5" placeholder="Ej: 28001" autocomplete="postal-code">
-            </div>
+            <div class="calc-extra-fields" id="quoteExtraFields"></div>
             <div class="calc-field">
               <div class="calc-field-label">Nivel de cobertura</div>
               <div class="calc-levels" id="quoteLevels">
@@ -1564,16 +1583,19 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           </div>
           <div>
             <div class="preview-card">
-              <div class="preview-label">Precio estimado</div>
-              <div class="preview-price"><small>Desde</small> <span id="prevPrice">35,00€</span> <small>/mes</small></div>
-              <p class="preview-why" id="prevWhy"></p>
-              <div class="preview-specs">
-                <div><span>Seguro</span><strong id="prevName">Coche</strong></div>
-                <div><span>Cobertura</span><strong id="prevCov">Cobertura completa coche</strong></div>
-                <div><span>WynPoints</span><strong id="prevPts">+700 WynPoints</strong></div>
-                <div><span>Validez</span><strong>30 días</strong></div>
+              <div class="calc-gate" id="quoteGate"></div>
+              <div class="calc-result-wrap" id="quoteResultWrap">
+                <div class="preview-label">Precio estimado</div>
+                <div class="preview-price"><small>Desde</small> <span id="prevPrice">35,00€</span> <small>/mes</small></div>
+                <p class="preview-why" id="prevWhy"></p>
+                <div class="preview-specs">
+                  <div><span>Seguro</span><strong id="prevName">Coche</strong></div>
+                  <div><span>Cobertura</span><strong id="prevCov">Cobertura completa coche</strong></div>
+                  <div><span>WynPoints</span><strong id="prevPts">+700 WynPoints</strong></div>
+                  <div><span>Validez</span><strong>30 días</strong></div>
+                </div>
+                <button class="btn btn-primary btn-block" type="button" id="saveQuoteBtn" style="margin-top:1.2rem;position:relative">Guardar cotización</button>
               </div>
-              <button class="btn btn-primary btn-block" type="button" id="saveQuoteBtn" style="margin-top:1.2rem;position:relative">Guardar cotización</button>
               <div class="preview-ref" id="prevRef"></div>
               <div class="preview-legal">*Precio orientativo hasta validación por la correduría.</div>
             </div>

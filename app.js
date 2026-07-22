@@ -59,7 +59,7 @@ let currentUser = null;
 let currentProfile = null;
 let currentPolicies = [];
 let currentPolicyDocuments = [];
-let selectedQuote = { name: 'Coche', price: 35, pts: 700, cov: 'Cobertura completa coche' };
+let selectedQuote = { name: 'Coche', price: 35, pts: 700, cov: 'Cobertura completa coche', level: 'Estándar', answers: {}, extra: {}, people: [] };
 let quoteCalcWidget = null;
 
 /* ---------- PRESUPUESTOS: estados del ciclo de validación ---------- */
@@ -146,12 +146,18 @@ function initQuotesViewToggle() {
 // Precios y puntos "base" (nivel Estándar, primera opción de cada pregunta).
 // El precio final es orientativo: base x nivel x cada respuesta. La aseguradora
 // valida el precio real una vez el cliente crea su cuenta y envía la cotización.
-// "postal: true" activa el campo de código postal (solo Coche y Hogar): es
-// opcional y solo afina el PRECIO por zona, nunca los WynPoints. Telemedicina
-// ya no está aquí: es una ventaja de WynCare+ que se contrata aparte, no un
-// seguro que se compare en este widget.
+// "extraFields" son campos de texto además de las preguntas de pastilla (ver
+// EXTRA_FIELD_MULT más abajo): cada uno tiene un "kind" que determina si afina
+// el precio o si es solo un dato que se guarda para más adelante (matrícula).
+// Telemedicina ya no está aquí: es una ventaja de WynCare+ que se contrata
+// aparte, no un seguro que se compare en este widget.
 const CALC_TYPES = {
-  Coche: { cov: 'Cobertura completa coche', base: 35, pts: 700, postal: true, questions: [
+  Coche: { cov: 'Cobertura completa coche', base: 35, pts: 700, extraFields: [
+    { key: 'postal', kind: 'postal', label: 'Código postal', hint: 'opcional, afina el precio',
+      placeholder: 'Ej: 28001', maxlength: 5, inputmode: 'numeric', autocomplete: 'postal-code' },
+    { key: 'matricula', kind: 'plate', label: 'Matrícula', hint: 'opcional, la usaremos al validar tu póliza',
+      placeholder: 'Ej: 1234ABC', maxlength: 8, inputmode: 'text', autocomplete: 'off' }
+  ], questions: [
     { key: 'vehiculo', label: 'Tipo de vehículo', options: [
       { label: 'Turismo', mult: 1 },
       { label: 'Moto', mult: 0.8 },
@@ -167,7 +173,12 @@ const CALC_TYPES = {
       { label: 'Menos de 2 años', mult: 1.4 }
     ]}
   ]},
-  Hogar: { cov: 'Cobertura completa hogar', base: 22, pts: 600, postal: true, questions: [
+  Hogar: { cov: 'Cobertura completa hogar', base: 22, pts: 600, extraFields: [
+    { key: 'postal', kind: 'postal', label: 'Código postal', hint: 'opcional, afina el precio',
+      placeholder: 'Ej: 28001', maxlength: 5, inputmode: 'numeric', autocomplete: 'postal-code' },
+    { key: 'metros', kind: 'size', label: 'Metros cuadrados', hint: 'opcional, afina el precio',
+      placeholder: 'Ej: 90', maxlength: 4, inputmode: 'numeric', autocomplete: 'off' }
+  ], questions: [
     { key: 'vivienda', label: 'Tipo de vivienda', options: [
       { label: 'Piso', mult: 1 },
       { label: 'Casa / chalet', mult: 1.25 }
@@ -177,16 +188,24 @@ const CALC_TYPES = {
       { label: 'Inquilino', mult: 0.85 }
     ]}
   ]},
-  Salud: { cov: 'Cobertura completa salud', base: 45, pts: 1500, questions: [
-    { key: 'personas', label: 'Nº de personas', options: [
-      { label: 'Solo yo', mult: 1 },
-      { label: 'Pareja', mult: 1.7 },
-      { label: 'Familia (3+)', mult: 2.6 }
-    ]},
+  // "peopleList": además de la pregunta "personas" (que ahora es solo un
+  // pequeño recargo de gestión, no el motor del precio), deja añadir una
+  // fila de edad por cada persona extra a asegurar; su coste se SUMA al de
+  // la edad del titular (ver computeQuote en initCalcWidget) en vez de
+  // multiplicarse — así el coste sube con la edad real de cada persona, no
+  // con un factor "Familia" inventado sin relación con quién forma la familia.
+  Salud: { cov: 'Cobertura completa salud', base: 45, pts: 1500,
+    peopleList: { questionKey: 'personas', ageQuestionKey: 'edad' },
+    questions: [
     { key: 'edad', label: 'Edad del asegurado principal', options: [
-      { label: 'Hasta 35', mult: 1 },
-      { label: '36-55', mult: 1.15 },
-      { label: '+55', mult: 1.45 }
+      { label: '0-18', mult: 0.6 },
+      { label: '19-50', mult: 1, default: true },
+      { label: '51-75', mult: 2 }
+    ]},
+    { key: 'personas', label: 'Nº de personas', options: [
+      { label: 'Solo yo', mult: 1, showPeopleList: false, suggestedExtra: 0 },
+      { label: 'Pareja', mult: 1.05, showPeopleList: true, suggestedExtra: 1 },
+      { label: 'Familia (3+)', mult: 1.1, showPeopleList: true, suggestedExtra: 2 }
     ]},
     { key: 'copago', label: 'Copago', options: [
       { label: 'Con copago', mult: 0.85 },
@@ -257,6 +276,22 @@ function calcRegionalMult(cp) {
   return 1;
 }
 
+// Multiplicador por tamaño de vivienda (m²) para Hogar: igual que el regional,
+// es una estimación de demo (vacío o no numérico => 1, sin efecto).
+function calcSizeMult(m2) {
+  var n = parseInt(m2, 10);
+  if (!n || n <= 0) return 1;
+  if (n < 60) return 0.9;
+  if (n <= 120) return 1;
+  if (n <= 200) return 1.3;
+  return 1.6;
+}
+
+// Qué "kind" de extraField afina el precio y con qué función. "plate"
+// (matrícula) no aparece aquí a propósito: hoy es solo un dato que se guarda,
+// no cambia el cálculo (no tenemos una base de datos real de vehículos).
+var EXTRA_FIELD_MULT = { postal: calcRegionalMult, size: calcSizeMult };
+
 // Motor compartido por la calculadora de la landing y "Cotizar seguro" del
 // Área Cliente: mismo tipo, mismas preguntas, mismo cálculo de precio — así
 // lo que el visitante rellena sin cuenta se traslada tal cual al presupuesto
@@ -264,52 +299,178 @@ function calcRegionalMult(cp) {
 function initCalcWidget(opts) {
   var typesEl = opts.typesEl, questionsEl = opts.questionsEl, levelsEl = opts.levelsEl;
   if (!typesEl || !questionsEl || !levelsEl) return null;
-  var postalWrap = opts.postalWrap || null;
-  var postalInput = postalWrap ? postalWrap.querySelector('input') : null;
+  var extraFieldsEl = opts.extraFieldsEl || null;
+  var gateEl = opts.gateEl || null;
+  var resultWrap = opts.resultWrap || null;
   var whyEl = opts.whyEl || null;
 
   function defaultAnswers(type) {
     var a = {};
-    CALC_TYPES[type].questions.forEach(function(q) { a[q.key] = { label: q.options[0].label, mult: q.options[0].mult }; });
+    CALC_TYPES[type].questions.forEach(function(q) {
+      var opt = q.options[0];
+      for (var i = 0; i < q.options.length; i++) { if (q.options[i].default) { opt = q.options[i]; break; } }
+      a[q.key] = { label: opt.label, mult: opt.mult };
+    });
     return a;
   }
 
-  var state = { type: 'Coche', level: 'Estándar', answers: defaultAnswers('Coche'), postal: '' };
+  function defaultExtra(type) {
+    var e = {};
+    (CALC_TYPES[type].extraFields || []).forEach(function(f) { e[f.key] = ''; });
+    return e;
+  }
 
-  function syncPostal() {
-    if (!postalWrap) return;
-    postalWrap.style.display = CALC_TYPES[state.type].postal ? '' : 'none';
+  // Busca la opción "cruda" (con showPeopleList/suggestedExtra, no solo
+  // {label,mult}) de una pregunta a partir de la etiqueta seleccionada.
+  function findOptionRaw(q, label) {
+    for (var i = 0; i < q.options.length; i++) { if (q.options[i].label === label) return q.options[i]; }
+    return q.options[0];
+  }
+
+  var state = {
+    type: 'Coche', level: 'Estándar', answers: defaultAnswers('Coche'), extra: defaultExtra('Coche'),
+    people: [], phase: 'dirty', calcTimer: null
+  };
+
+  // Bloque "Edad de las demás personas": solo lo tienen los tipos con
+  // "peopleList" (hoy Salud) y solo se muestra si la opción elegida de
+  // "personas" trae showPeopleList:true.
+  function peopleListHtml() {
+    var cfg = CALC_TYPES[state.type];
+    var pl = cfg.peopleList;
+    var qDef = cfg.questions.filter(function(q) { return q.key === pl.questionKey; })[0];
+    var ageQ = cfg.questions.filter(function(q) { return q.key === pl.ageQuestionKey; })[0];
+    if (!qDef || !ageQ) return '';
+    var personasOpt = findOptionRaw(qDef, state.answers[pl.questionKey].label);
+    var rows = state.people.map(function(p, idx) {
+      var pills = ageQ.options.map(function(o) {
+        return '<button class="calc-level" type="button" data-mult="' + o.mult + '" aria-pressed="' + (p.label === o.label) + '">' + esc(o.label) + '</button>';
+      }).join('');
+      return '<div class="calc-person-row" data-person-idx="' + idx + '">' +
+        '<div class="calc-qopts" data-person-idx="' + idx + '">' + pills + '</div>' +
+        '<button class="calc-person-remove btn-icon" type="button" aria-label="Quitar persona ' + (idx + 1) + '"><svg class="icon" style="width:14px;height:14px"><use href="#i-close"/></svg></button>' +
+        '</div>';
+    }).join('');
+    return '<div class="calc-field calc-people-field"' + (personasOpt.showPeopleList ? '' : ' hidden') + '>' +
+      '<div class="calc-field-label">Edad de las demás personas</div>' +
+      '<div class="calc-people" data-people-list>' + rows + '</div>' +
+      '<button class="btn btn-ghost btn-sm calc-add-person" type="button"><svg class="icon" style="width:14px;height:14px"><use href="#i-plus"/></svg>Añadir persona</button>' +
+      '</div>';
   }
 
   function renderQuestions() {
     var cfg = CALC_TYPES[state.type];
     questionsEl.innerHTML = cfg.questions.map(function(q) {
-      var opts = q.options.map(function(o) {
+      var pills = q.options.map(function(o) {
         var pressed = state.answers[q.key].label === o.label;
         return '<button class="calc-level" type="button" data-mult="' + o.mult + '" aria-pressed="' + pressed + '">' + esc(o.label) + '</button>';
       }).join('');
-      return '<div class="calc-field"><div class="calc-field-label">' + esc(q.label) + '</div><div class="calc-qopts" data-qkey="' + q.key + '">' + opts + '</div></div>';
+      var html = '<div class="calc-field"><div class="calc-field-label">' + esc(q.label) + '</div><div class="calc-qopts" data-qkey="' + q.key + '">' + pills + '</div></div>';
+      if (cfg.peopleList && cfg.peopleList.questionKey === q.key) html += peopleListHtml();
+      return html;
     }).join('');
-    syncPostal();
   }
 
-  function render() {
+  // Contenedor genérico: cada tipo declara sus propios "extraFields" (CP,
+  // matrícula, m²...); si no tiene ninguno queda vacío y el CSS
+  // ":empty{display:none}" se encarga de no dejar hueco.
+  function renderExtraFields() {
+    if (!extraFieldsEl) return;
     var cfg = CALC_TYPES[state.type];
-    // El nivel y las respuestas mueven precio Y puntos; el código postal solo
-    // afina el precio (por eso pts se calcula antes de aplicar el regional).
-    var baseMult = CALC_LEVEL_MULT[state.level];
-    Object.keys(state.answers).forEach(function(k) { baseMult *= state.answers[k].mult; });
-    var pts = Math.round(cfg.pts * baseMult);
-    var regional = cfg.postal ? calcRegionalMult(state.postal) : 1;
-    var price = cfg.base * baseMult * regional;
-    opts.priceEl.textContent = formatCurrency(price) + '€';
-    if (opts.ptsEl) opts.ptsEl.textContent = pts.toLocaleString();
-    var detail = cfg.questions.map(function(q) { return state.answers[q.key].label; }).join(' · ');
-    if (whyEl) whyEl.innerHTML = '<span class="cw-q">¿Por qué este precio?</span> ' + esc(detail.toLowerCase() + ' · cobertura ' + state.level.toLowerCase());
-    if (opts.onChange) opts.onChange({
-      type: state.type, level: state.level, answers: state.answers, postal: state.postal, price: price, pts: pts,
-      cov: cfg.cov, covDetailed: cfg.cov + ' · Nivel ' + state.level + ' · ' + detail
+    extraFieldsEl.innerHTML = (cfg.extraFields || []).map(function(f) {
+      return '<div class="calc-field">' +
+        '<div class="calc-field-label">' + esc(f.label) + ' <span class="calc-field-opt">· ' + esc(f.hint) + '</span></div>' +
+        '<input class="calc-extra-input" type="text" inputmode="' + f.inputmode + '" maxlength="' + f.maxlength + '" ' +
+        'placeholder="' + esc(f.placeholder) + '" autocomplete="' + f.autocomplete + '" data-field-key="' + f.key + '" value="' + esc(state.extra[f.key] || '') + '">' +
+        '</div>';
+    }).join('');
+  }
+
+  // Cálculo puro: no toca el DOM ni dispara onChange (eso lo hace
+  // revealResult, y solo tras el retardo de "Calcular precio").
+  function computeQuote() {
+    var cfg = CALC_TYPES[state.type];
+    var pl = cfg.peopleList;
+    var mult = CALC_LEVEL_MULT[state.level];
+    cfg.questions.forEach(function(q) {
+      if (pl && q.key === pl.ageQuestionKey) {
+        // La edad del titular se SUMA (no se multiplica) con la de cada
+        // persona añadida: el coste crece con la edad real de cada uno,
+        // no con un factor "Familia" inventado.
+        var sum = state.answers[q.key].mult;
+        state.people.forEach(function(p) { sum += p.mult; });
+        mult *= sum;
+      } else {
+        mult *= state.answers[q.key].mult;
+      }
     });
+    // El nivel y las respuestas mueven precio Y puntos; los campos extra que
+    // afinan por zona/tamaño solo afinan el PRECIO (por eso pts se calcula
+    // antes de aplicarlos).
+    var pts = Math.round(cfg.pts * mult);
+    var extraMult = 1;
+    (cfg.extraFields || []).forEach(function(f) {
+      var fn = EXTRA_FIELD_MULT[f.kind];
+      if (fn) extraMult *= fn(state.extra[f.key]);
+    });
+    var price = cfg.base * mult * extraMult;
+    var detail = cfg.questions.map(function(q) { return state.answers[q.key].label; }).join(' · ');
+    if (pl && state.people.length) {
+      detail += ' · +' + state.people.length + ' persona' + (state.people.length > 1 ? 's' : '') +
+        ' (' + state.people.map(function(p) { return p.label; }).join(', ') + ')';
+    }
+    return {
+      type: state.type, level: state.level, answers: state.answers, extra: state.extra, people: state.people.slice(),
+      price: price, pts: pts, cov: cfg.cov, detail: detail,
+      covDetailed: cfg.cov + ' · Nivel ' + state.level + ' · ' + detail
+    };
+  }
+
+  // Cualquier cambio invalida el resultado ya mostrado: hay que volver a
+  // pulsar "Calcular precio" para verlo, no se recalcula solo.
+  function markDirty() {
+    if (state.calcTimer) { clearInterval(state.calcTimer); state.calcTimer = null; }
+    state.phase = 'dirty';
+    if (resultWrap) resultWrap.classList.remove('is-shown');
+    if (gateEl) {
+      gateEl.style.display = '';
+      var btn = gateEl.querySelector('.calc-gate-btn');
+      var status = gateEl.querySelector('.calc-gate-status');
+      if (btn) { btn.disabled = false; btn.textContent = 'Calcular precio'; }
+      if (status) status.hidden = true;
+    }
+  }
+
+  function revealResult(quote) {
+    opts.priceEl.textContent = formatCurrency(quote.price) + '€';
+    if (opts.ptsEl) opts.ptsEl.textContent = quote.pts.toLocaleString();
+    if (whyEl) whyEl.innerHTML = '<span class="cw-q">¿Por qué este precio?</span> ' + esc(quote.detail.toLowerCase() + ' · cobertura ' + quote.level.toLowerCase());
+    state.phase = 'revealed';
+    if (gateEl) gateEl.style.display = 'none';
+    if (resultWrap) resultWrap.classList.add('is-shown');
+    if (opts.onChange) opts.onChange(quote);
+  }
+
+  // Simula el tiempo que tardaría en consultar un cálculo real — el día que
+  // haya un cálculo de verdad (agente/backend), solo esta función cambia;
+  // computeQuote/revealResult y el resto del motor no se tocan.
+  function startCalculation() {
+    if (!gateEl || state.phase === 'calculating') return;
+    state.phase = 'calculating';
+    var btn = gateEl.querySelector('.calc-gate-btn');
+    var status = gateEl.querySelector('.calc-gate-status');
+    var msgEl = gateEl.querySelector('.calc-gate-msg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Calculando…'; }
+    if (status) status.hidden = false;
+    var msgs = ['Comparando aseguradoras…', 'Verificando tus datos…', 'Calculando tu precio…'];
+    var total = 2000 + Math.random() * 500, step = total / msgs.length, i = 0;
+    if (msgEl) msgEl.textContent = msgs[0];
+    state.calcTimer = setInterval(function() {
+      i++;
+      if (i < msgs.length) { if (msgEl) msgEl.textContent = msgs[i]; return; }
+      clearInterval(state.calcTimer); state.calcTimer = null;
+      revealResult(computeQuote());
+    }, step);
   }
 
   typesEl.addEventListener('click', function(e) {
@@ -321,8 +482,11 @@ function initCalcWidget(opts) {
     btn.setAttribute('aria-pressed', 'true');
     state.type = name;
     state.answers = defaultAnswers(name);
+    state.extra = defaultExtra(name);
+    state.people = [];
     renderQuestions();
-    render();
+    renderExtraFields();
+    markDirty();
   });
 
   levelsEl.addEventListener('click', function(e) {
@@ -331,61 +495,116 @@ function initCalcWidget(opts) {
     qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
     btn.setAttribute('aria-pressed', 'true');
     state.level = btn.dataset.level;
-    render();
+    markDirty();
   });
 
   questionsEl.addEventListener('click', function(e) {
+    var addBtn = e.target.closest('.calc-add-person');
+    if (addBtn) {
+      var cfgA = CALC_TYPES[state.type];
+      var ageQA = cfgA.questions.filter(function(q) { return q.key === cfgA.peopleList.ageQuestionKey; })[0];
+      state.people.push({ label: ageQA.options[1].label, mult: ageQA.options[1].mult });
+      renderQuestions();
+      markDirty();
+      return;
+    }
+    var removeBtn = e.target.closest('.calc-person-remove');
+    if (removeBtn) {
+      var row = removeBtn.closest('.calc-person-row');
+      state.people.splice(parseInt(row.dataset.personIdx, 10), 1);
+      renderQuestions();
+      markDirty();
+      return;
+    }
     var btn = e.target.closest('.calc-level');
     if (!btn) return;
     var group = btn.closest('.calc-qopts');
     if (!group) return;
+    if (group.dataset.personIdx !== undefined) {
+      qsa('.calc-level', group).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
+      btn.setAttribute('aria-pressed', 'true');
+      state.people[parseInt(group.dataset.personIdx, 10)] = { label: btn.textContent, mult: parseFloat(btn.dataset.mult) };
+      markDirty();
+      return;
+    }
+    var qkey = group.dataset.qkey;
+    var cfg = CALC_TYPES[state.type];
+    var isPeopleQuestion = !!(cfg.peopleList && cfg.peopleList.questionKey === qkey);
+    var qDef = cfg.questions.filter(function(q) { return q.key === qkey; })[0];
+    var oldShowList = isPeopleQuestion && findOptionRaw(qDef, state.answers[qkey].label).showPeopleList;
     qsa('.calc-level', group).forEach(function(b) { b.setAttribute('aria-pressed', 'false'); });
     btn.setAttribute('aria-pressed', 'true');
-    state.answers[group.dataset.qkey] = { label: btn.textContent, mult: parseFloat(btn.dataset.mult) };
-    render();
+    state.answers[qkey] = { label: btn.textContent, mult: parseFloat(btn.dataset.mult) };
+    if (isPeopleQuestion) {
+      var optNew = findOptionRaw(qDef, btn.textContent);
+      if (!optNew.showPeopleList) {
+        state.people = [];
+      } else if (!oldShowList) {
+        // Veníamos de una opción sin lista (Solo yo): siembra el nº
+        // sugerido con el tramo ancla, sin impedir luego añadir/quitar.
+        var ageQ = cfg.questions.filter(function(q) { return q.key === cfg.peopleList.ageQuestionKey; })[0];
+        state.people = [];
+        for (var i = 0; i < optNew.suggestedExtra; i++) state.people.push({ label: ageQ.options[1].label, mult: ageQ.options[1].mult });
+      }
+      // Si ya había lista visible y se sigue mostrando (Pareja<->Familia),
+      // no se toca lo que el usuario ya haya añadido/quitado.
+    }
+    renderQuestions();
+    markDirty();
   });
 
-  if (postalInput) postalInput.addEventListener('input', function() {
-    state.postal = postalInput.value;
-    render();
+  if (extraFieldsEl) extraFieldsEl.addEventListener('input', function(e) {
+    var key = e.target.dataset.fieldKey;
+    if (!key) return;
+    state.extra[key] = e.target.value;
+    markDirty();
   });
+
+  if (gateEl) {
+    gateEl.innerHTML =
+      '<button type="button" class="btn btn-primary btn-block calc-gate-btn">Calcular precio</button>' +
+      '<div class="calc-gate-status" hidden aria-live="polite"><span class="calc-spinner" aria-hidden="true"></span><span class="calc-gate-msg"></span></div>';
+    gateEl.addEventListener('click', function(e) {
+      if (e.target.closest('.calc-gate-btn')) startCalculation();
+    });
+  }
 
   renderQuestions();
-  render();
+  renderExtraFields();
+  markDirty();
 
   return {
     setState: function(partial) {
       if (partial.type && CALC_TYPES[partial.type]) {
         state.type = partial.type;
         state.answers = defaultAnswers(partial.type);
-        qsa('.type-card', typesEl).forEach(function(b) {
-          var n = b.dataset.type || b.dataset.name;
-          b.setAttribute('aria-pressed', n === partial.type ? 'true' : 'false');
-        });
-        renderQuestions();
+        state.extra = defaultExtra(partial.type);
+        state.people = [];
       }
-      if (partial.level && CALC_LEVEL_MULT[partial.level]) {
-        state.level = partial.level;
-        qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', b.dataset.level === partial.level ? 'true' : 'false'); });
-      }
+      if (partial.level && CALC_LEVEL_MULT[partial.level]) state.level = partial.level;
       if (partial.answers) {
         Object.keys(partial.answers).forEach(function(k) {
           if (state.answers.hasOwnProperty(k)) state.answers[k] = partial.answers[k];
         });
-        qsa('.calc-qopts', questionsEl).forEach(function(group) {
-          var key = group.dataset.qkey;
-          if (!partial.answers.hasOwnProperty(key)) return;
-          qsa('.calc-level', group).forEach(function(b) {
-            b.setAttribute('aria-pressed', parseFloat(b.dataset.mult) === partial.answers[key].mult ? 'true' : 'false');
-          });
-        });
       }
-      if (partial.postal !== undefined) {
-        state.postal = partial.postal || '';
-        if (postalInput) postalInput.value = state.postal;
+      if (partial.extra) {
+        Object.keys(partial.extra).forEach(function(k) { state.extra[k] = partial.extra[k]; });
+      } else if (partial.postal !== undefined) {
+        // Compatibilidad con una cotización guardada en localStorage antes
+        // de este cambio (shape antiguo con "postal" suelto en vez de "extra").
+        state.extra.postal = partial.postal || '';
       }
-      syncPostal();
-      render();
+      if (partial.people) state.people = partial.people.slice();
+      qsa('.type-card', typesEl).forEach(function(b) {
+        var n = b.dataset.type || b.dataset.name;
+        b.setAttribute('aria-pressed', n === state.type ? 'true' : 'false');
+      });
+      qsa('.calc-level', levelsEl).forEach(function(b) { b.setAttribute('aria-pressed', b.dataset.level === state.level ? 'true' : 'false'); });
+      renderQuestions();
+      renderExtraFields();
+      // Esta cotización ya se calculó una vez (en la landing); se revela
+      // directo, sin volver a pasar por el botón "Calcular precio".
+      revealResult(computeQuote());
     }
   };
 }
@@ -696,9 +915,10 @@ function updateSettings() {
 function initQuoteSelector() {
   quoteCalcWidget = initCalcWidget({
     typesEl: $('typeGrid'), questionsEl: $('quoteQuestions'), levelsEl: $('quoteLevels'),
-    priceEl: $('prevPrice'), ptsEl: null, postalWrap: $('quotePostalField'), whyEl: $('prevWhy'),
+    priceEl: $('prevPrice'), ptsEl: null, extraFieldsEl: $('quoteExtraFields'),
+    gateEl: $('quoteGate'), resultWrap: $('quoteResultWrap'), whyEl: $('prevWhy'),
     onChange: function(s) {
-      selectedQuote = { name: s.type, price: s.price, pts: s.pts, cov: s.covDetailed };
+      selectedQuote = { name: s.type, price: s.price, pts: s.pts, cov: s.covDetailed, level: s.level, answers: s.answers, extra: s.extra, people: s.people };
       $('prevName').textContent = s.type;
       $('prevCov').textContent = s.cov;
       $('prevPts').textContent = '+ ' + s.pts.toLocaleString() + ' WynPoints';
@@ -715,7 +935,8 @@ function initQuoteSelector() {
 function initLandingCalculator() {
   initCalcWidget({
     typesEl: $('calcTypes'), questionsEl: $('calcQuestions'), levelsEl: $('calcLevels'),
-    priceEl: $('calcPrice'), ptsEl: $('calcPts'), postalWrap: $('calcPostalField'), whyEl: $('calcWhy'),
+    priceEl: $('calcPrice'), ptsEl: $('calcPts'), extraFieldsEl: $('calcExtraFields'),
+    gateEl: $('calcGate'), resultWrap: $('calcResultWrap'), whyEl: $('calcWhy'),
     onChange: function(s) {
       try { localStorage.setItem('wyncare_landing_quote', JSON.stringify(s)); } catch (e) {}
     }
@@ -742,11 +963,22 @@ async function saveQuote() {
     // "quotes" no tiene columnas "quote_type"/"coverage_description"/
     // "wynpoints"/"reference": el tipo va en "type" (enum insurance_type,
     // en min\u00fasculas) y el resto de datos variables van dentro de "form_data".
+    var flatAnswers = {};
+    Object.keys(selectedQuote.answers || {}).forEach(function(k) { flatAnswers[k] = selectedQuote.answers[k].label; });
     var { data, error } = await sb.from('quotes').insert({
       user_id: currentUser.id,
       type: selectedQuote.name.toLowerCase(),
       premium: selectedQuote.price,
-      form_data: { coverage_description: selectedQuote.cov, wynpoints: selectedQuote.pts },
+      form_data: {
+        coverage_description: selectedQuote.cov,
+        wynpoints: selectedQuote.pts,
+        level: selectedQuote.level || null,
+        answers: flatAnswers,
+        postal_code: (selectedQuote.extra && selectedQuote.extra.postal) || null,
+        plate: (selectedQuote.extra && selectedQuote.extra.matricula) || null,
+        size_m2: (selectedQuote.extra && selectedQuote.extra.metros) || null,
+        additional_people_ages: (selectedQuote.people || []).map(function(p) { return p.label; })
+      },
       status: 'pending_docs'
     }).select().single();
     if (error) throw error;
