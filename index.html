@@ -290,12 +290,15 @@ em.accent{font-style:normal;color:var(--gold)}
 /* ==================================================================
    8. HOW IT WORKS
    ================================================================== */
-.how-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6rem;position:relative;margin-top:2.2rem}
-.how-steps::before{content:"";position:absolute;top:24px;left:6%;right:6%;height:1px;background:repeating-linear-gradient(to right,var(--border-strong) 0 8px,transparent 8px 16px)}
-.how-step{position:relative;display:flex;flex-direction:column;gap:.85rem}
-.how-num{width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;position:relative;z-index:1}
+.how-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem;position:relative;margin-top:2.2rem}
+.how-steps::before{content:"";position:absolute;top:45px;left:6%;right:6%;height:1px;background:linear-gradient(to right,transparent,rgba(var(--gold-rgb),.4) 15%,rgba(var(--gold-rgb),.4) 85%,transparent)}
+.how-step{position:relative;display:flex;flex-direction:column;gap:.85rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;transition:transform .2s ease,box-shadow .2s ease}
+.how-step:hover{transform:translateY(-3px);box-shadow:var(--shadow-1)}
+.how-icon{width:42px;height:42px;border-radius:11px;background:rgba(var(--gold-rgb),.14);display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.how-icon svg{width:20px;height:20px;stroke:var(--gold)}
+.how-num{width:22px;height:22px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.68rem;font-weight:700;position:absolute;top:-6px;right:-6px;z-index:2}
 .how-step p{color:var(--text-2);font-size:.88rem}
-@media (max-width:900px){.how-steps{grid-template-columns:1fr 1fr;row-gap:2rem}.how-steps::before{display:none}}
+@media (max-width:900px){.how-steps{grid-template-columns:1fr 1fr;row-gap:1.1rem}.how-steps::before{display:none}}
 @media (max-width:560px){.how-steps{grid-template-columns:1fr}}
 
 /* ==================================================================
@@ -1008,10 +1011,10 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
           <p>Sin papeleo. Sin llamadas. Sin complicaciones.</p>
         </div>
         <div class="how-steps">
-          <div class="how-step reveal"><div class="how-num">1</div><h3>Cuéntanos</h3><p>Dinos qué necesitas proteger. Solo las preguntas necesarias.</p></div>
-          <div class="how-step reveal"><div class="how-num">2</div><h3>Comparamos</h3><p>Analizamos el mercado y te mostramos las mejores opciones.</p></div>
-          <div class="how-step reveal"><div class="how-num">3</div><h3>Contrata</h3><p>Elige y contrata con ayuda de IA. Todo digital, sin papeleo.</p></div>
-          <div class="how-step reveal"><div class="how-num">4</div><h3>Gestiona</h3><p>Centraliza todo desde tu Dashboard: pólizas, puntos, salud.</p></div>
+          <div class="how-step spotlight reveal reveal-stagger" style="--stagger:0"><div class="how-icon"><svg class="icon"><use href="#i-chat"/></svg><div class="how-num">1</div></div><h3>Cuéntanos</h3><p>Dinos qué necesitas proteger. Solo las preguntas necesarias.</p></div>
+          <div class="how-step spotlight reveal reveal-stagger" style="--stagger:1"><div class="how-icon"><svg class="icon"><use href="#i-search"/></svg><div class="how-num">2</div></div><h3>Comparamos</h3><p>Analizamos el mercado y te mostramos las mejores opciones.</p></div>
+          <div class="how-step spotlight reveal reveal-stagger" style="--stagger:2"><div class="how-icon"><svg class="icon"><use href="#i-doc"/></svg><div class="how-num">3</div></div><h3>Contrata</h3><p>Elige y contrata con ayuda de IA. Todo digital, sin papeleo.</p></div>
+          <div class="how-step spotlight reveal reveal-stagger" style="--stagger:3"><div class="how-icon"><svg class="icon"><use href="#i-grid"/></svg><div class="how-num">4</div></div><h3>Gestiona</h3><p>Centraliza todo desde tu Dashboard: pólizas, puntos, salud.</p></div>
         </div>
       </div>
     </section>
