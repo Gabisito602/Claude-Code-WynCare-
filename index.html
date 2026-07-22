@@ -265,7 +265,7 @@ em.accent{font-style:normal;color:var(--gold)}
    ================================================================== */
 .features{background:var(--surface-2)}
 .bento-top{display:grid;grid-template-columns:2fr 1fr;gap:1.1rem}
-.bento-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1rem;margin-top:1.1rem}
+.bento-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;margin-top:1.1rem}
 .feat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;transition:transform .2s ease,box-shadow .2s ease}
 .feat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-1)}
 .feat-icon{width:42px;height:42px;border-radius:11px;background:rgba(var(--gold-rgb),.14);display:flex;align-items:center;justify-content:center;margin-bottom:1rem}
@@ -273,6 +273,8 @@ em.accent{font-style:normal;color:var(--gold)}
 .feat-card p{margin-top:.5rem;color:var(--text-2);font-size:.9rem}
 .feat-large{display:flex;flex-direction:column;justify-content:space-between}
 .feat-large p{max-width:26rem}
+.feat-stat{margin-top:1.3rem;padding-top:.9rem;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:1.3rem;font-weight:700;color:var(--gold)}
+.feat-stat small{font-size:.72rem;font-weight:500;color:var(--text-3);margin-left:.3rem}
 .chip-demo{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.3rem}
 .chip-demo span{font-family:var(--font-mono);font-size:.74rem;padding:.4rem .7rem;border-radius:var(--radius-full);border:1px solid var(--border);color:var(--text-2)}
 .chip-demo span.best{border-color:var(--gold);color:var(--gold);background:rgba(var(--gold-rgb),.1)}
@@ -735,6 +737,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 <symbol id="i-pulse" viewBox="0 0 24 24"><polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/></symbol>
 <symbol id="i-paw" viewBox="0 0 24 24"><ellipse cx="6.5" cy="10" rx="1.7" ry="2.2"/><ellipse cx="10.5" cy="7.6" rx="1.8" ry="2.4"/><ellipse cx="14.5" cy="8.4" rx="1.8" ry="2.3"/><ellipse cx="18" cy="11.3" rx="1.6" ry="2"/><path d="M12.3 12.4c-2.4 0-4.3 1.8-4.6 3.8-.2 1.5.9 2.7 2.4 2.7.9 0 1.4-.4 2.2-.4s1.3.4 2.2.4c1.5 0 2.6-1.2 2.4-2.7-.3-2-2.2-3.8-4.6-3.8z"/></symbol>
 <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+<symbol id="i-percent" viewBox="0 0 24 24"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="7.5" cy="7.5" r="2.7"/><circle cx="16.5" cy="16.5" r="2.7"/></symbol>
 <symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15.5V12a1 1 0 0 1 .1-.4l1.6-3.4A2 2 0 0 1 6.5 7h2l1.8-2.3A2 2 0 0 1 11.9 4h.2a2 2 0 0 1 1.6.8L15.5 7h2a2 2 0 0 1 1.8 1.2l1.6 3.4a1 1 0 0 1 .1.4v3.5"/><path d="M2.3 15.5h19.4"/><path d="M8 7h8"/><circle cx="7" cy="15.8" r="1.7"/><circle cx="17" cy="15.8" r="1.7"/></symbol>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.5 9.7V19a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.7"/><path d="M10 20v-5.2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V20"/><line x1="7.3" y1="13.5" x2="8.8" y2="13.5"/></symbol>
 <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 19.5S3.8 14.6 3.8 9.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8.2 2.2c0 5.4-8.2 10.3-8.2 10.3z"/><polyline points="6.2 12 9 12 10.3 8.8 12.7 15.2 14 12 17.8 12"/></symbol>
@@ -963,7 +966,7 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         <div class="section-head center reveal">
           <span class="eyebrow">Funcionalidades</span>
           <h2>Todo lo que necesitas, en un solo lugar</h2>
-          <p>WynCare no es una aseguradora. Es una plataforma tecnológica que usa IA para simplificar tu protección.</p>
+          <p>Estas son las piezas que hacen que comparar, contratar y gestionar tu seguro sea distinto.</p>
         </div>
 
         <div class="bento-top">
@@ -989,10 +992,9 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
         </div>
 
         <div class="bento-grid">
-          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-bolt"/></svg></div><h3>Cotización en 2 min</h3><p>Contesta solo lo necesario y obtén una estimación al instante.</p></div>
-          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-award"/></svg></div><h3>WynPoints</h3><p>Acumula puntos por cada seguro activo y cámbialos por recompensas.</p></div>
-          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-pulse"/></svg></div><h3>Telemedicina</h3><p>Videoconsultas, recetas y gestión de salud desde la plataforma.</p></div>
-          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-grid"/></svg></div><h3>Dashboard central</h3><p>Pólizas, documentos y renovaciones en un solo panel.</p></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-bolt"/></svg></div><h3>Cotización exprés</h3><p>Contesta solo lo necesario y obtén una estimación al instante.</p><div class="feat-stat">2 <small>min</small></div></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-award"/></svg></div><h3>WynPoints</h3><p>Acumula puntos por cada seguro activo y cámbialos por recompensas.</p><div class="feat-stat">+1.500 <small>pts por seguro</small></div></div>
+          <div class="feat-card spotlight reveal"><div class="feat-icon"><svg class="icon"><use href="#i-percent"/></svg></div><h3>Comisión transparente</h3><p>Nos financiamos con la comisión de tu aseguradora — nunca con lo que tú pagas de más.</p><div class="feat-stat">0€ <small>de comisión oculta</small></div></div>
         </div>
       </div>
     </section>
