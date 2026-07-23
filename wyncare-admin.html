@@ -367,6 +367,7 @@ table.data tbody tr:hover{background:var(--surface-2)}
       <div class="sb-group-label">Negocio</div>
       <button class="sb-item" data-tab="polizas"><svg class="icon"><use href="#i-shield"/></svg>Pólizas</button>
       <button class="sb-item" data-tab="presupuestos"><svg class="icon"><use href="#i-file"/></svg>Presupuestos</button>
+      <button class="sb-item" data-tab="siniestros"><svg class="icon"><use href="#i-alert"/></svg>Siniestros</button>
       <button class="sb-item" data-tab="aseguradoras"><svg class="icon"><use href="#i-store"/></svg>Aseguradoras</button>
 
       <div class="sb-group-label">Fidelización</div>
@@ -490,6 +491,7 @@ table.data tbody tr:hover{background:var(--surface-2)}
       <div class="admin-tab" id="tab-clientes"><div id="mount-clientes"></div></div>
       <div class="admin-tab" id="tab-polizas"><div id="mount-polizas"></div></div>
       <div class="admin-tab" id="tab-presupuestos"><div id="mount-presupuestos"></div></div>
+      <div class="admin-tab" id="tab-siniestros"><div id="mount-siniestros"></div></div>
 
       <div class="admin-tab" id="tab-aseguradoras">
         <div class="subtabs">
@@ -640,6 +642,17 @@ Object.keys(QUOTE_STATUS_LABELS).forEach(function(k){ QUOTE_STATUS_BY_LABEL[QUOT
 
 var POLICY_STATUS_LABELS = { active: 'Activa', pending: 'Pendiente', cancelled: 'Cancelada', expired: 'Expirada' };
 
+// Tasa de comisión provisional por tipo de seguro — configurada a mano
+// (misma cifra que ya se mostraba en el mock de "Aseguradoras" para el ramo
+// correspondiente), no automatizada todavía con ninguna aseguradora real.
+// Se aplica sobre la prima mensual de la póliza al crearla.
+var COMMISSION_RATE = { coche: 0.12, hogar: 0.10, salud: 0.15, vida: 0.11, empresa: 0.13, mascotas: 0.10 };
+function commissionFor(type, premium){
+  var rate = COMMISSION_RATE[(type || '').toLowerCase()];
+  if (rate == null || premium == null) return null;
+  return Math.round(premium * rate * 100) / 100;
+}
+
 function formatDateEs(d){
   if (!d) return '—';
   try { return new Date(d).toLocaleDateString('es-ES'); } catch (e) { return '—'; }
@@ -650,6 +663,13 @@ function formatEsNumber(n){
   var sign = fixed.charAt(0) === '-' ? '-' : '';
   if (sign) fixed = fixed.slice(1);
   return sign + fixed.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// A diferencia de formatEsNumber (puntos, sin decimales), una cifra de
+// dinero real como la comisión sí pierde precisión si se redondea a euros
+// enteros — aquí se mantienen los céntimos.
+function formatEuros(n){
+  return (n || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /* Mismos umbrales que getTier() en app.js: hay que mantenerlos sincronizados
@@ -664,6 +684,13 @@ function isSameMonth(dateStr, ref){
   if (!dateStr) return false;
   var d = new Date(dateStr);
   return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+}
+
+function monthKeyEs(dateStr){
+  if (!dateStr) return '—';
+  var d = new Date(dateStr);
+  var label = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 /* ---------- TEMA ---------- */
@@ -740,6 +767,8 @@ async function checkAdminAndEnter(user){
     showAdminApp(res.data.full_name || (user.email || '').split('@')[0] || 'Admin');
     refreshPresupuestos();
     refreshPolizas();
+    refreshSiniestros();
+    refreshComisiones();
     refreshUsuarios();
     refreshClientes();
     refreshWynpoints();
@@ -930,10 +959,11 @@ function openManageModal(cfg, idx, onSaved){
       '<label>Motivo del rechazo</label><input type="text" id="modalReason" value="'+esc(row.motivo || '')+'" placeholder="Ej: Falta el CIF de la empresa">' +
     '</div>'
   ) : '';
-  var fileHtml =
+  var fileHtml = ma.fileLabel ? (
     '<div class="field"><label>'+esc(ma.fileLabel)+'</label><input type="file" id="modalFile" accept="application/pdf">' +
     (row.documento ? '<p style="font-size:.78rem;color:var(--text-3);margin-top:.4rem">Archivo actual: '+esc(row.documento)+'</p>' : '') +
-    '</div>';
+    '</div>'
+  ) : '';
 
   openModal(
     '<h3>'+esc(ma.label)+'</h3><p style="font-size:.8rem;color:var(--text-3);margin-top:.2rem">'+esc(row.ref || row.cliente || '')+'</p>' +
@@ -1042,6 +1072,7 @@ var D = {
               quote_id: row._id,
               type: row._type,
               premium: row._premium,
+              commission_amount: commissionFor(row._type, row._premium),
               reference: friendlyRef('WC', row._id),
               status: 'active'
             });
@@ -1049,6 +1080,23 @@ var D = {
             await refreshPolizas();
           }
         }
+      }
+    },
+    rows:[]
+  },
+  siniestros:{
+    title:'Siniestros', addLabel:'Nuevo siniestro',
+    stats:[['—','totales'],['—','abiertos'],['—','resueltos']],
+    columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'fecha',label:'Fecha incidente',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    manageAction:{
+      label:'Gestionar siniestro',
+      statusOptions:['Enviado','En revisión','Resuelto','Rechazado'],
+      persist: async function(row, changes){
+        if (!sb) return;
+        var updates = { status: changes.estado };
+        updates.resolution_note = changes.estado === 'Rechazado' ? (changes.motivo || null) : null;
+        var { error } = await sb.from('claims').update(updates).eq('id', row._id);
+        if (error) throw error;
       }
     },
     rows:[]
@@ -1067,15 +1115,13 @@ var D = {
   },
   comisiones:{
     title:'Comisiones', addLabel:'Registrar liquidación',
-    stats:[['3.510€','comisión del mes'],['2','liquidadas'],['3','pendientes']],
-    columns:[{key:'aseguradora',label:'Aseguradora'},{key:'mes',label:'Mes'},{key:'nuevas',label:'Pólizas nuevas',align:'right'},{key:'comision',label:'Comisión',align:'right'},{key:'estado',label:'Estado',badge:true}],
-    rows:[
-      {aseguradora:'AXA',mes:'Junio 2026',nuevas:'18',comision:'1.240€',estado:'Liquidada'},
-      {aseguradora:'Mapfre',mes:'Junio 2026',nuevas:'11',comision:'780€',estado:'Liquidada'},
-      {aseguradora:'Sanitas',mes:'Junio 2026',nuevas:'9',comision:'960€',estado:'Pendiente'},
-      {aseguradora:'Allianz',mes:'Junio 2026',nuevas:'4',comision:'310€',estado:'Pendiente'},
-      {aseguradora:'Generali',mes:'Junio 2026',nuevas:'2',comision:'220€',estado:'Pendiente'}
-    ]
+    stats:[['—','comisión del mes'],['—','acumulada'],['—','pólizas con comisión']],
+    // Sin "Aseguradora" todavía: las pólizas no tienen un asegurador real
+    // asignado (ver "Aseguradoras", que sigue siendo mock) — por eso se
+    // agrega por mes en vez de por aseguradora, y "Estado" es siempre
+    // "Pendiente" (no existe ningún flujo real de liquidación aún).
+    columns:[{key:'mes',label:'Mes'},{key:'nuevas',label:'Pólizas',align:'right'},{key:'comision',label:'Comisión',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[]
   },
   wynpoints:{
     title:'Movimientos de WynPoints', addLabel:'Ajuste manual',
@@ -1250,7 +1296,7 @@ document.getElementById('activityFeed').innerHTML = D.logs.rows.slice(0,4).map(f
 
 /* ---------- GLOBAL SEARCH ---------- */
 var SEARCH_INDEX = [];
-var SECTION_LABELS = {usuarios:'Usuarios',clientes:'Clientes',polizas:'Pólizas',presupuestos:'Presupuestos',aseguradoras:'Aseguradoras',comisiones:'Comisiones',wynpoints:'WynPoints',niveles:'Niveles',beneficios:'Beneficios',tarjetas:'Tarjetas regalo',comercios:'Comercios',telemedicina:'Telemedicina',documentos:'Documentos',mensajes:'Mensajes',notificaciones:'Notificaciones',automatizaciones:'Automatizaciones',logs:'Logs'};
+var SECTION_LABELS = {usuarios:'Usuarios',clientes:'Clientes',polizas:'Pólizas',presupuestos:'Presupuestos',siniestros:'Siniestros',aseguradoras:'Aseguradoras',comisiones:'Comisiones',wynpoints:'WynPoints',niveles:'Niveles',beneficios:'Beneficios',tarjetas:'Tarjetas regalo',comercios:'Comercios',telemedicina:'Telemedicina',documentos:'Documentos',mensajes:'Mensajes',notificaciones:'Notificaciones',automatizaciones:'Automatizaciones',logs:'Logs'};
 var PARENT_TAB = {comisiones:'aseguradoras',niveles:'wynpoints',tarjetas:'beneficios'};
 Object.keys(D).forEach(function(key){
   var cfg = D[key];
@@ -1328,6 +1374,38 @@ async function refreshPresupuestos(){
   }
 }
 
+async function refreshSiniestros(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('claims').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var claims = res.data || [];
+    var profiles = await fetchProfilesByIds(claims.map(function(c){ return c.user_id; }));
+    var rows = claims.map(function(c){
+      var profile = profiles[c.user_id];
+      return {
+        ref: c.reference || friendlyRef('SN', c.id),
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        tipo: c.incident_type || '—',
+        fecha: formatDateEs(c.incident_date || c.created_at),
+        estado: c.status || 'Enviado',
+        motivo: c.resolution_note || '',
+        _id: c.id
+      };
+    });
+    var cfg = D.siniestros;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var abiertos = rows.filter(function(r){ return r.estado === 'Enviado' || r.estado === 'En revisión'; }).length;
+    var resueltos = rows.filter(function(r){ return r.estado === 'Resuelto'; }).length;
+    cfg.stats = [[String(rows.length), 'totales'], [String(abiertos), 'abiertos'], [String(resueltos), 'resueltos']];
+    mountTable('mount-siniestros', cfg);
+    refreshSearchIndexSection('siniestros');
+  } catch (err) {
+    showToast('No se pudieron cargar los siniestros: ' + err.message);
+  }
+}
+
 async function refreshPolizas(){
   if (!sb) return;
   try {
@@ -1359,6 +1437,39 @@ async function refreshPolizas(){
     refreshSearchIndexSection('polizas');
   } catch (err) {
     showToast('No se pudieron cargar las pólizas: ' + err.message);
+  }
+}
+
+// Agrega por mes en vez de por aseguradora porque las pólizas todavía no
+// tienen un asegurador real asignado (ver comentario en D.comisiones).
+async function refreshComisiones(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('policies').select('created_at, commission_amount').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var policies = (res.data || []).filter(function(p){ return p.commission_amount != null; });
+    var byMonth = {};
+    var order = [];
+    policies.forEach(function(p){
+      var key = monthKeyEs(p.created_at);
+      if (!byMonth[key]) { byMonth[key] = { nuevas: 0, comision: 0 }; order.push(key); }
+      byMonth[key].nuevas += 1;
+      byMonth[key].comision += p.commission_amount;
+    });
+    var rows = order.map(function(key){
+      return { mes: key, nuevas: String(byMonth[key].nuevas), comision: formatEuros(byMonth[key].comision) + '€', estado: 'Pendiente' };
+    });
+    var cfg = D.comisiones;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var now = new Date();
+    var esteMs = policies.filter(function(p){ return isSameMonth(p.created_at, now); }).reduce(function(s,p){ return s + p.commission_amount; }, 0);
+    var total = policies.reduce(function(s,p){ return s + p.commission_amount; }, 0);
+    cfg.stats = [[formatEuros(esteMs) + '€', 'comisión del mes'], [formatEuros(total) + '€', 'acumulada'], [String(policies.length), 'pólizas con comisión']];
+    mountTable('mount-comisiones', cfg);
+    refreshSearchIndexSection('comisiones');
+  } catch (err) {
+    showToast('No se pudieron cargar las comisiones: ' + err.message);
   }
 }
 
