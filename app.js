@@ -698,6 +698,7 @@ function navigate(hash) {
     if (!currentUser) { navigate('#/login'); return; }
     showView('view-app');
     showAppTab('tab-' + (appMatch[1] || 'resumen'));
+    closeAppSidebar();
     return;
   }
   if (ROUTES[path]) { showView(ROUTES[path]); return; }
@@ -953,6 +954,35 @@ function initLandingCalculator() {
     onChange: function(s) {
       try { localStorage.setItem('wyncare_landing_quote', JSON.stringify(s)); } catch (e) {}
     }
+  });
+}
+
+/* ---------- ÁREA CLIENTE: cajón lateral del menú en móvil ---------- */
+// Mismo patrón que el cajón del panel admin (wyncare-admin.html): oculto
+// fuera de pantalla con transform, se abre con el botón de la topbar móvil
+// y se cierra solo, al navegar a otra pestaña, al tocar el overlay o con Esc.
+function openAppSidebar() {
+  var sidebar = $('appSidebar'), overlay = $('appSidebarOverlay'), toggle = $('appSidebarToggle');
+  if (sidebar) sidebar.classList.add('is-open');
+  if (overlay) overlay.classList.add('is-open');
+  if (toggle) toggle.setAttribute('aria-expanded', 'true');
+}
+function closeAppSidebar() {
+  var sidebar = $('appSidebar'), overlay = $('appSidebarOverlay'), toggle = $('appSidebarToggle');
+  if (sidebar) sidebar.classList.remove('is-open');
+  if (overlay) overlay.classList.remove('is-open');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+function initAppSidebarDrawer() {
+  var toggle = $('appSidebarToggle'), overlay = $('appSidebarOverlay'), sidebar = $('appSidebar');
+  if (!toggle || !overlay || !sidebar) return;
+  toggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (sidebar.classList.contains('is-open')) closeAppSidebar(); else openAppSidebar();
+  });
+  overlay.addEventListener('click', closeAppSidebar);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && sidebar.classList.contains('is-open')) closeAppSidebar();
   });
 }
 
@@ -1500,6 +1530,7 @@ async function loadAdminTab(tabName) {
   initRewards();
   initClaims();
   initLandingCalculator();
+  initAppSidebarDrawer();
   initTeddyAttract();
   // Always bind forms even before Supabase loads
   initLoginForm();
