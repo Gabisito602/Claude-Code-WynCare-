@@ -8,7 +8,6 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // La clave service_role NUNCA debe estar en código de cliente: cualquier visitante
 // puede leerla y saltarse las políticas RLS. Las operaciones de admin que la
 // necesiten deben vivir en una Edge Function de Supabase.
-const ADMIN_EMAILS = ['admin@wyncare.es', 'gabriiel.calvo88@gmail.com', 'alex@wyncare.com'];
 
 /* ---------- SUPABASE CLIENT (con red de seguridad) ---------- */
 // Si el CDN de Supabase no llega a cargar (red lenta, ad-blocker, firewall
@@ -704,7 +703,9 @@ function navigate(hash) {
   if (ROUTES[path]) { showView(ROUTES[path]); return; }
   if (path === '/admin') {
     if (!currentUser) { navigate('#/login'); return; }
-    if (!ADMIN_EMAILS.includes(currentUser.email)) { showView('view-404'); return; }
+    // El check real vive en Postgres (is_admin()/RLS): esto solo evita que
+    // alguien sin el rol vea el panel pintarse, no protege datos por sí solo.
+    if (currentProfile?.role !== 'admin') { showView('view-404'); return; }
     loadAdminPanel();
     return;
   }

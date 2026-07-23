@@ -1029,6 +1029,26 @@ var D = {
         }
         var { error } = await sb.from('quotes').update(updates).eq('id', row._id);
         if (error) throw error;
+        // Puente cotización → póliza: hasta ahora, validar un presupuesto no
+        // creaba ninguna póliza real (solo actualizaba "quotes"). Al pasar a
+        // "validated", damos de alta la póliza si todavía no existe una para
+        // esta cotización (quote_id evita duplicar si se repite la acción).
+        if (updates.status === 'validated') {
+          var existing = await sb.from('policies').select('id').eq('quote_id', row._id).maybeSingle();
+          if (existing.error) throw existing.error;
+          if (!existing.data) {
+            var insPolicy = await sb.from('policies').insert({
+              user_id: row._userId,
+              quote_id: row._id,
+              type: row._type,
+              premium: row._premium,
+              reference: friendlyRef('WC', row._id),
+              status: 'active'
+            });
+            if (insPolicy.error) throw insPolicy.error;
+            await refreshPolizas();
+          }
+        }
       }
     },
     rows:[]
@@ -1289,7 +1309,9 @@ async function refreshPresupuestos(){
         motivo: q.rejection_reason || '',
         documento: q.document_url ? 'Presupuesto validado.pdf' : '',
         _id: q.id,
-        _userId: q.user_id
+        _userId: q.user_id,
+        _type: q.type,
+        _premium: q.premium
       };
     });
     var cfg = D.presupuestos;
