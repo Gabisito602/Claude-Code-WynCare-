@@ -69,6 +69,7 @@ html{scroll-behavior:smooth}
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
+html,body{overflow-x:hidden}
 body{
   margin:0;background:var(--canvas);color:var(--text-1);font-family:var(--font-ui);
   line-height:1.6;-webkit-font-smoothing:antialiased;

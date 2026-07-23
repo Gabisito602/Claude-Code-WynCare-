@@ -634,6 +634,12 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
 .reward-row .nm{font-size:.88rem;font-weight:600}
 .reward-row .ds{font-size:.76rem;color:var(--text-2)}
 .reward-row .cost{font-family:var(--font-mono);font-size:.78rem;color:var(--text-2);margin-right:.5rem}
+.reward-action{display:flex;align-items:center;flex:none}
+@media (max-width:480px){
+  .reward-row{flex-wrap:wrap}
+  .reward-action{flex-basis:calc(100% - 38px - .75rem);justify-content:space-between;margin:.6rem 0 0 calc(38px + .75rem)}
+  .reward-row .cost{margin-right:0}
+}
 
 .tele-list .tele-row{cursor:default}
 .tele-book-panel{display:none;margin-top:1.2rem}
@@ -667,6 +673,10 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
   .app-sidebar-foot{flex-direction:row;flex-wrap:wrap;border-top:0;margin-left:auto}
   .quick-grid{grid-template-columns:repeat(2,1fr)}
   .dash-grid{grid-template-columns:1fr}
+}
+@media (max-width:480px){
+  .app-main{padding:1rem}
+  .dash-panel{padding:.9rem}
 }
 
 /* ==================================================================
@@ -1646,10 +1656,10 @@ footer{border-top:1px solid var(--border);margin-top:var(--pad-section)}
     <div class="app-tab" id="tab-beneficios">
       <div class="app-topbar"><div class="app-title"><h2>Beneficios</h2><p>Canjea tus WynPoints por recompensas reales</p></div></div>
       <div class="dash-panel">
-        <div class="reward-row"><span class="ic"><svg><use href="#i-gift"/></svg></span><div class="info"><div class="nm">Tarjeta regalo Amazon 10€</div><div class="ds">Amazon, El Corte Inglés</div></div><span class="cost">800 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div>
-        <div class="reward-row"><span class="ic"><svg><use href="#i-fuel"/></svg></span><div class="info"><div class="nm">5€ en gasolina</div><div class="ds">Repsol, Cepsa, BP</div></div><span class="cost">400 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div>
-        <div class="reward-row"><span class="ic"><svg><use href="#i-dumbbell"/></svg></span><div class="info"><div class="nm">Mes de gimnasio</div><div class="ds">Red de gimnasios asociados</div></div><span class="cost">1.200 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div>
-        <div class="reward-row"><span class="ic"><svg><use href="#i-film"/></svg></span><div class="info"><div class="nm">2 entradas de cine</div><div class="ds">Cines asociados</div></div><span class="cost">600 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div>
+        <div class="reward-row"><span class="ic"><svg><use href="#i-gift"/></svg></span><div class="info"><div class="nm">Tarjeta regalo Amazon 10€</div><div class="ds">Amazon, El Corte Inglés</div></div><div class="reward-action"><span class="cost">800 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div></div>
+        <div class="reward-row"><span class="ic"><svg><use href="#i-fuel"/></svg></span><div class="info"><div class="nm">5€ en gasolina</div><div class="ds">Repsol, Cepsa, BP</div></div><div class="reward-action"><span class="cost">400 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div></div>
+        <div class="reward-row"><span class="ic"><svg><use href="#i-dumbbell"/></svg></span><div class="info"><div class="nm">Mes de gimnasio</div><div class="ds">Red de gimnasios asociados</div></div><div class="reward-action"><span class="cost">1.200 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div></div>
+        <div class="reward-row"><span class="ic"><svg><use href="#i-film"/></svg></span><div class="info"><div class="nm">2 entradas de cine</div><div class="ds">Cines asociados</div></div><div class="reward-action"><span class="cost">600 pts</span><button class="btn btn-quiet btn-sm redeem-btn" type="button">Canjear</button></div></div>
       </div>
     </div>
 
