@@ -1,0 +1,212 @@
+/* ============================================================
+   WynCare — styles.css v1
+   Fuente única de verdad del sistema de diseño.
+   La cargan index.html y wyncare-admin.html; cada página añade
+   después su propio <style> con lo específico de esa página.
+
+   Índice:
+     1. Tokens (colores, radios, sombras, tipografías, motion)
+     2. Reset + base
+     3. Componentes compartidos (botones, badges, switch, toggle…)
+     4. Utilidades premium (grain, aurora, spotlight, glow, reveal)
+   ============================================================ */
+
+/* ==================================================================
+   1. TOKENS
+   ================================================================== */
+:root{
+  /* superficie y texto */
+  --canvas:#0A0F1C; --surface:#0F1626; --surface-2:#141D33; --surface-3:#1A2440;
+  --glass-bg:rgba(255,255,255,.05); --glass-border:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.09); --border-strong:rgba(255,255,255,.18);
+  --text-1:#F4F2EC; --text-2:rgba(244,242,236,.66); --text-3:rgba(244,242,236,.62);
+
+  /* marca */
+  --gold:#D8B573; --gold-strong:#E8C98F; --gold-ink:#20160A; --gold-rgb:216,181,115;
+  /* variante de --gold para texto de enlace (AA 4.5:1 en ambos temas; --gold a secas
+     solo cumple contraste como fondo de botón o como icono/borde, no como texto) */
+  --gold-text:#D8B573;
+  --violet:#8C7CF0; --violet-rgb:140,124,240; --teal:#4FD6C4; --teal-rgb:79,214,196;
+
+  /* estados */
+  --success:#3ED598; --success-bg:rgba(62,213,152,.13);
+  --danger:#F2765C; --danger-bg:rgba(242,118,92,.13);
+  --warning:#E8B84B; --warning-bg:rgba(232,184,75,.14);
+
+  /* forma y profundidad */
+  --shadow-1:0 20px 50px -26px rgba(0,0,0,.65); --shadow-2:0 34px 90px -34px rgba(0,0,0,.75);
+  --radius-sm:10px; --radius-md:16px; --radius-lg:24px; --radius-full:999px;
+
+  /* tipografía y layout */
+  --font-ui:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  --pad-section:clamp(3.5rem,7vw,6.5rem); --w-container:1180px;
+
+  /* motion */
+  --ease-out-expo:cubic-bezier(.16,1,.3,1);
+
+  /* hooks que cada página puede ajustar (el admin los reduce) */
+  --icon-size:20px; --tt-size:38px;
+}
+html[data-theme="light"]{
+  --canvas:#F6F4EE; --surface:#FFFFFF; --surface-2:#FBF9F3; --surface-3:#F1EDE1;
+  --glass-bg:rgba(16,22,38,.035); --glass-border:rgba(16,22,38,.09);
+  --border:rgba(16,22,38,.09); --border-strong:rgba(16,22,38,.18);
+  --text-1:#12172A; --text-2:rgba(18,23,42,.64); --text-3:rgba(18,23,42,.62);
+  --gold:#A9813C; --gold-strong:#8C6B2E; --gold-ink:#FFFFFF; --gold-rgb:169,129,60;
+  --gold-text:#876730;
+  --success:#1F9463; --success-bg:#E4F5EC; --danger:#C7472F; --danger-bg:#FBE7E2;
+  --warning:#9A7415; --warning-bg:#F6ECD2;
+  --shadow-1:0 16px 40px -24px rgba(16,22,38,.16); --shadow-2:0 24px 64px -28px rgba(16,22,38,.2);
+}
+
+/* ==================================================================
+   2. RESET + BASE
+   ================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+html,body{overflow-x:hidden}
+body{
+  margin:0;background:var(--canvas);color:var(--text-1);font-family:var(--font-ui);
+  line-height:1.6;-webkit-font-smoothing:antialiased;
+  transition:background .35s ease,color .35s ease;
+}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+ul{list-style:none;margin:0;padding:0}
+h1,h2,h3,h4,p{margin:0}
+h1,h2,h3{letter-spacing:-.02em;font-weight:700}
+input,select,textarea{font:inherit;color:inherit;background:none;border:0}
+table{border-collapse:collapse;width:100%}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+.icon{width:var(--icon-size);height:var(--icon-size);stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:var(--font-mono)}
+.container{width:100%;max-width:var(--w-container);margin-inline:auto;padding-inline:clamp(1.25rem,4vw,2.5rem)}
+.section-pad{padding-block:var(--pad-section)}
+.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ==================================================================
+   3. COMPONENTES COMPARTIDOS
+   ================================================================== */
+/* --- botones --- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  padding:.85rem 1.5rem;border-radius:var(--radius-full);font-weight:600;font-size:.93rem;
+  white-space:nowrap;transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease,opacity .18s ease;
+}
+.btn-primary{background:var(--gold);color:var(--gold-ink);position:relative;overflow:hidden}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 32px -14px rgba(var(--gold-rgb),.55)}
+.btn-primary::after{
+  content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(115deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-18deg);transition:left .6s var(--ease-out-expo);pointer-events:none;
+}
+.btn-primary:hover::after{left:130%}
+.btn-ghost{background:transparent;border:1px solid var(--border-strong);color:var(--text-1)}
+.btn-ghost:hover{background:var(--glass-bg)}
+.btn-quiet{background:var(--glass-bg);border:1px solid var(--border);color:var(--text-1)}
+.btn-quiet:hover{background:var(--surface-2)}
+.btn-block{width:100%}
+.btn-sm{padding:.6rem 1.05rem;font-size:.83rem}
+.btn-icon{width:32px;height:32px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-2)}
+.btn-icon:hover{background:var(--surface-3);color:var(--text-1)}
+.btn:disabled{opacity:.5;cursor:default;transform:none!important}
+
+/* --- badges de estado --- */
+.badge{display:inline-flex;align-items:center;font-family:var(--font-mono);font-size:.7rem;font-weight:600;padding:.28rem .6rem;border-radius:var(--radius-full);white-space:nowrap}
+.tone-success{color:var(--success);background:var(--success-bg)}
+.tone-warning{color:var(--warning);background:var(--warning-bg)}
+.tone-danger{color:var(--danger);background:var(--danger-bg)}
+.tone-neutral{color:var(--text-2);background:var(--surface-3)}
+.tone-gold{color:var(--gold);background:rgba(var(--gold-rgb),.14)}
+
+/* --- superficies --- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md)}
+.glass{background:var(--glass-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--glass-border)}
+
+/* --- switch (interruptor accesible via aria-checked) --- */
+.switch{
+  --w:46px;--h:26px;width:var(--w);height:var(--h);border-radius:var(--radius-full);
+  background:var(--surface-3);border:1px solid var(--border-strong);position:relative;flex:none;transition:background .2s ease;
+}
+.switch::after{
+  content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:var(--text-1);transition:transform .22s ease;
+}
+.switch[aria-checked="true"]{background:var(--gold)}
+.switch[aria-checked="true"]::after{transform:translateX(20px);background:var(--gold-ink)}
+
+/* --- conmutador de tema (sol/luna) --- */
+.theme-toggle{
+  width:var(--tt-size);height:var(--tt-size);border-radius:50%;border:1px solid var(--border-strong);
+  display:flex;align-items:center;justify-content:center;flex:none;position:relative;overflow:hidden;
+}
+.theme-toggle:hover{background:var(--glass-bg)}
+.theme-toggle svg{position:absolute;transition:transform .3s ease,opacity .3s ease}
+.theme-toggle .i-sun{opacity:0;transform:rotate(45deg) scale(.5)}
+.theme-toggle .i-moon{opacity:1;transform:none}
+html[data-theme="light"] .theme-toggle .i-sun{opacity:1;transform:none}
+html[data-theme="light"] .theme-toggle .i-moon{opacity:0;transform:rotate(-45deg) scale(.5)}
+
+/* --- toast --- */
+.toast{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%) translateY(20px);background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-1);padding:.75rem 1.1rem;border-radius:var(--radius-md);box-shadow:var(--shadow-2);font-size:.84rem;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:100;display:flex;align-items:center;gap:.5rem;max-width:90vw}
+.toast.is-shown{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:16px;height:16px;color:var(--gold);flex:none}
+
+/* ==================================================================
+   4. UTILIDADES PREMIUM (motion + textura)
+   ================================================================== */
+/* aparición al hacer scroll (index) o al montar (via .tab-anim) */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .7s var(--ease-out-expo),transform .7s var(--ease-out-expo)}
+.reveal.is-visible{opacity:1;transform:none}
+.reveal-stagger.is-visible{transition-delay:calc(var(--stagger,0) * 70ms)}
+@keyframes tab-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.tab-anim{animation:tab-in .5s var(--ease-out-expo) both}
+
+/* texto con degradado de marca */
+.grad-text{
+  background:linear-gradient(100deg,var(--gold-strong) 0%,var(--gold) 35%,var(--violet) 75%,var(--teal) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;font-style:normal;
+}
+
+/* grano cinematográfico sobre fondos oscuros */
+.grain{position:relative}
+.grain::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* blobs aurora flotantes */
+.aurora{position:absolute;border-radius:50%;filter:blur(70px);pointer-events:none;will-change:transform,opacity}
+@keyframes aurora-float{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(3%,-4%) scale(1.08)}
+  66%{transform:translate(-3%,3%) scale(.95)}
+}
+@media (prefers-reduced-motion:reduce){.aurora{animation:none!important}}
+
+/* glow que sigue al cursor — el JS fija --mx/--my en mousemove */
+.spotlight{position:relative;isolation:isolate}
+.spotlight::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:0;
+  background:radial-gradient(320px circle at var(--mx,50%) var(--my,50%),rgba(var(--gold-rgb),.16),transparent 65%);
+}
+.spotlight:hover::before{opacity:1}
+.spotlight>*{position:relative;z-index:1}
+
+/* borde conic-gradient animado (CTA) */
+.glow-border{position:relative;z-index:0}
+.glow-border::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;z-index:-1;padding:1px;opacity:.8;
+  background:conic-gradient(from var(--angle,0deg),var(--gold),var(--violet),var(--teal),var(--gold));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;animation:glow-spin 6s linear infinite;
+}
+@keyframes glow-spin{to{--angle:360deg}}
+@property --angle{syntax:'<angle>';initial-value:0deg;inherits:false}
+@media (prefers-reduced-motion:reduce){.glow-border::before{animation:none}}

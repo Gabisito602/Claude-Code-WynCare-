@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WynCare — Panel de Administración</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0A0F1C">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=1">
+<style>
+/* Base específica del panel de administración
+   (tokens y componentes compartidos viven en styles.css) */
+:root{--icon-size:18px;--tt-size:34px}
+body{line-height:1.5}
+h1{font-size:1.7rem}
+h2{font-size:1.3rem}
+h3{font-size:1.02rem;font-weight:650}
+
+/* botones compactos, densidad de panel */
+.btn{padding:.6rem 1.05rem;font-size:.82rem;gap:.45rem}
+.btn svg{width:15px;height:15px}
+
+/* spotlight sobre las tarjetas de datos — mismo patrón que .spotlight,
+   aplicado a las clases del panel (el JS fija --mx/--my sobre ellas) */
+.kpi-card,.panel,.integ-card,.settings-card{position:relative;isolation:isolate}
+.kpi-card::before,.panel::before,.integ-card::before,.settings-card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .3s ease;pointer-events:none;z-index:0;
+  background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%),rgba(var(--gold-rgb),.14),transparent 65%);
+}
+.kpi-card:hover::before,.panel:hover::before,.integ-card:hover::before,.settings-card:hover::before{opacity:1}
+.kpi-card>*,.panel>*,.integ-card>*,.settings-card>*{position:relative;z-index:1}
+
+/* ===== LOGIN GATE ===== */
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;position:relative;overflow:hidden;
+  background:radial-gradient(60% 55% at 88% 8%,rgba(var(--gold-rgb),.14) 0%,transparent 60%),radial-gradient(120% 100% at 100% 0%,#141D33 0%,#0A0F1C 45%,#070B15 100%)}
+.gate .aurora-1{width:40vw;height:40vw;max-width:560px;max-height:560px;top:-16%;right:-8%;background:radial-gradient(circle,rgba(var(--violet-rgb),.3),transparent 70%);animation:aurora-float 22s ease-in-out infinite}
+.gate .aurora-2{width:28vw;height:28vw;max-width:400px;max-height:400px;bottom:-12%;left:-6%;background:radial-gradient(circle,rgba(var(--teal-rgb),.2),transparent 70%);animation:aurora-float 26s ease-in-out infinite reverse}
+.gate-card{position:relative;z-index:1;width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem 1.8rem;box-shadow:var(--shadow-2)}
+.gate-brand{display:flex;align-items:center;gap:.6rem;font-weight:800;font-size:1.05rem;justify-content:center}
+.gate-brand .mark{width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.gate-brand .mark img{width:100%;height:100%;object-fit:cover}
+.gate-brand .mark svg{width:16px;height:16px;stroke:var(--gold-ink)}
+.gate-brand em{font-style:normal;color:var(--gold)}
+.gate h1{text-align:center;margin-top:1.3rem;font-size:1.25rem}
+.gate p.sub{text-align:center;margin-top:.4rem;color:var(--text-2);font-size:.86rem}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-top:1rem}
+.field label{font-size:.76rem;font-weight:600;color:var(--text-2)}
+.field .iw{display:flex;align-items:center;gap:.5rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:.1rem .8rem;background:var(--surface-2)}
+.field .iw:focus-within{border-color:var(--gold)}
+.field .iw svg{width:15px;height:15px;color:var(--text-3)}
+.field input,.field select{flex:1;padding:.68rem 0;width:100%}
+.field select{appearance:none;-webkit-appearance:none}
+.gate-legal{font-size:.72rem;color:var(--text-3);margin-top:1.1rem;text-align:center}
+
+/* ===== APP SHELL ===== */
+#app{display:none;grid-template-columns:250px 1fr;min-height:100vh}
+#app.is-active{display:grid}
+.sidebar{background:#0A0F1C;color:#F4F2EC;padding:1.1rem .9rem;display:flex;flex-direction:column;gap:1rem;position:sticky;top:0;height:100vh;overflow-y:auto;
+  background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:22px 22px}
+.sb-brand{display:flex;align-items:center;gap:.55rem;font-weight:800;padding:.4rem;font-size:.98rem}
+.sb-brand .mark{width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.sb-brand .mark img{width:100%;height:100%;object-fit:cover}
+.sb-brand .mark svg{width:15px;height:15px;stroke:var(--gold-ink)}
+.sb-brand em{font-style:normal;color:#E8C98F}
+.sb-group-label{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(244,242,236,.35);padding:.9rem .6rem .3rem}
+.sb-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .6rem;border-radius:9px;font-size:.82rem;font-weight:500;color:rgba(244,242,236,.64);text-align:left;width:100%}
+.sb-item svg{width:15px;height:15px;flex:none}
+.sb-item{transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.sb-item[aria-current="page"]{background:rgba(var(--gold-rgb),.14);color:#E8C98F;box-shadow:inset 3px 0 0 var(--gold)}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
+
+.main{background:var(--canvas);min-width:0}
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.9rem;padding:.8rem 1.4rem;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--canvas) 85%, transparent);backdrop-filter:blur(10px)}
+.gsearch{position:relative;flex:1;max-width:380px}
+.gsearch .iw{display:flex;align-items:center;gap:.55rem;border:1px solid var(--border-strong);border-radius:var(--radius-full);padding:.5rem .9rem;background:var(--surface)}
+.gsearch svg{width:15px;height:15px;color:var(--text-3)}
+.gsearch input{flex:1;font-size:.84rem}
+.gsearch-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);overflow:hidden;display:none;z-index:30}
+.gsearch-results.is-open{display:block}
+.gsearch-results button{display:flex;flex-direction:column;gap:.1rem;width:100%;text-align:left;padding:.6rem .9rem;border-bottom:1px solid var(--border)}
+.gsearch-results button:last-child{border-bottom:0}
+.gsearch-results button:hover{background:var(--surface-2)}
+.gsearch-results .r-main{font-size:.84rem;font-weight:600}
+.gsearch-results .r-meta{font-size:.72rem;color:var(--text-3)}
+.gsearch-empty{padding:.9rem;font-size:.8rem;color:var(--text-3);text-align:center}
+.topbar-spacer{flex:1}
+.topbar-actions{display:flex;align-items:center;gap:.5rem}
+.bell-wrap{position:relative}
+.bell-dot{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--danger);border:2px solid var(--canvas)}
+.dropdown{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-2);display:none;overflow:hidden;z-index:30}
+.dropdown.is-open{display:block}
+.dropdown-head{padding:.8rem .9rem;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:700}
+.dropdown-item{padding:.7rem .9rem;border-bottom:1px solid var(--border);font-size:.8rem}
+.dropdown-item:last-child{border-bottom:0}
+.dropdown-item .t{font-weight:600}
+.dropdown-item .d{color:var(--text-3);font-size:.72rem;margin-top:.15rem}
+.dropdown-link{display:block;padding:.7rem .9rem;font-size:.8rem;font-weight:600;color:var(--gold-text);text-align:left;width:100%}
+.dropdown-link:hover{background:var(--surface-2)}
+.user-chip{display:flex;align-items:center;gap:.5rem;padding:.3rem .55rem .3rem .3rem;border-radius:var(--radius-full);border:1px solid var(--border-strong)}
+.user-chip .av{width:26px;height:26px;border-radius:50%;background:var(--gold);color:var(--gold-ink);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+.user-chip .nm{font-size:.78rem;font-weight:600}
+.user-chip .rl{font-size:.66rem;color:var(--text-3)}
+
+.page{padding:clamp(1.2rem,3vw,2rem)}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.3rem}
+.page-head p{color:var(--text-2);font-size:.88rem;margin-top:.3rem}
+.readonly-tag{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;font-family:var(--font-mono);color:var(--warning);background:var(--warning-bg);padding:.3rem .65rem;border-radius:var(--radius-full)}
+
+.admin-tab{display:none}
+.admin-tab.is-active{display:block}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.9rem}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem}
+.kpi-card .ic{width:32px;height:32px;border-radius:9px;background:rgba(var(--gold-rgb),.14);display:flex;align-items:center;justify-content:center}
+.kpi-card svg{width:15px;height:15px;color:var(--gold)}
+.kpi-card .v{font-family:var(--font-mono);font-size:1.4rem;font-weight:700;margin-top:.7rem}
+.kpi-card .l{font-size:.74rem;color:var(--text-2);margin-top:.1rem}
+.kpi-card .d{font-size:.68rem;margin-top:.4rem;font-weight:600}
+.kpi-card .d.up{color:var(--success)}
+.kpi-card .d.down{color:var(--danger)}
+@media (max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.panel-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:1.1rem;margin-top:1.1rem}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.2rem}
+.panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.panel-head .sub{font-size:.76rem;color:var(--text-3)}
+@media (max-width:960px){.panel-grid{grid-template-columns:1fr}}
+
+.bar-chart{display:flex;align-items:flex-end;gap:.7rem;height:150px;margin-top:.5rem}
+.bar-chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.4rem;height:100%}
+.bar-chart .bar .fill{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--gold-strong),var(--gold));min-height:4px;transition:height 1s var(--ease-out-expo)}
+.bar-chart .bar .lbl{font-size:.66rem;color:var(--text-3)}
+.bar-chart .bar .val{font-family:var(--font-mono);font-size:.68rem;color:var(--text-2)}
+
+.hbar-row{display:flex;align-items:center;gap:.7rem;margin-top:.8rem}
+.hbar-row .lbl{width:76px;font-size:.78rem;color:var(--text-2);flex:none}
+.hbar-row .track{flex:1;height:7px;background:var(--surface-3);border-radius:var(--radius-full);overflow:hidden}
+.hbar-row .fill{height:100%;border-radius:var(--radius-full);background:var(--gold);transition:width 1s var(--ease-out-expo)}
+.hbar-row .val{width:38px;text-align:right;font-family:var(--font-mono);font-size:.74rem;flex:none}
+
+.funnel-row{display:flex;align-items:center;justify-content:space-between;padding:.75rem 0;border-bottom:1px solid var(--border)}
+.funnel-row:last-child{border-bottom:0}
+.funnel-row .l{font-size:.85rem}
+.funnel-row .r{font-family:var(--font-mono);font-weight:700}
+
+.activity-item{display:flex;gap:.6rem;padding:.6rem 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.activity-item:last-child{border-bottom:0}
+.activity-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:.4rem;flex:none}
+.activity-item .t{font-size:.7rem;color:var(--text-3);margin-top:.1rem}
+
+.alert-row{display:flex;align-items:center;gap:.65rem;padding:.65rem;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.alert-row+.alert-row{margin-top:.55rem}
+.alert-row svg{width:15px;height:15px;color:var(--warning);flex:none}
+.alert-row span{font-size:.82rem;flex:1}
+.alert-row a{font-size:.76rem;font-weight:600;color:var(--gold-text)}
+
+/* ===== TABLE CARD ===== */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+.tc-stats{display:flex;gap:1.6rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tc-stat .v{font-family:var(--font-mono);font-weight:700;font-size:1rem}
+.tc-stat .l{font-size:.7rem;color:var(--text-3)}
+.tc-head{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tc-head h3{flex:1;min-width:120px}
+.tc-search{display:flex;align-items:center;gap:.5rem;border:1px solid var(--border-strong);border-radius:var(--radius-full);padding:.42rem .8rem;background:var(--surface-2);min-width:180px}
+.tc-search svg{width:14px;height:14px;color:var(--text-3)}
+.tc-search input{flex:1;font-size:.8rem}
+.tc-wrap{overflow-x:auto}
+table.data{min-width:100%}
+table.data th{text-align:left;font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);font-weight:600;padding:.7rem 1.2rem;border-bottom:1px solid var(--border);white-space:nowrap}
+table.data td{padding:.75rem 1.2rem;border-bottom:1px solid var(--border);font-size:.84rem;white-space:nowrap}
+table.data tr:last-child td{border-bottom:0}
+table.data td.al-right,table.data th.al-right{text-align:right}
+table.data tbody tr:hover{background:var(--surface-2)}
+.row-actions{display:inline-flex;gap:.25rem}
+.tc-empty{padding:2rem;text-align:center;color:var(--text-3);font-size:.84rem}
+
+.subtabs{display:flex;gap:.4rem;margin-bottom:1rem}
+.subtab{padding:.5rem 1rem;border-radius:var(--radius-full);font-size:.8rem;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong)}
+.subtab[aria-selected="true"]{background:var(--gold);color:var(--gold-ink);border-color:transparent}
+
+/* ===== SETTINGS ===== */
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.3rem}
+.settings-card+.settings-card{margin-top:1rem}
+.perm-table th,.perm-table td{text-align:center}
+.perm-table th:first-child,.perm-table td:first-child{text-align:left}
+.perm-table td svg{width:15px;height:15px;color:var(--success);margin-inline:auto}
+.perm-table td.no svg{color:var(--text-3);opacity:.35}
+
+.integ-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.integ-card{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem}
+.integ-card .ic{width:34px;height:34px;border-radius:9px;background:var(--surface-3);display:flex;align-items:center;justify-content:center}
+.integ-card svg{width:16px;height:16px;color:var(--gold)}
+.integ-card h4{margin-top:.8rem;font-size:.9rem}
+.integ-card p{font-size:.76rem;color:var(--text-2);margin-top:.3rem}
+.integ-card .st{margin-top:.8rem}
+@media (max-width:900px){.integ-grid{grid-template-columns:1fr}}
+
+.toast{position:fixed;left:50%;bottom:1.5rem;transform:translateX(-50%) translateY(20px);background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-1);padding:.75rem 1.1rem;border-radius:var(--radius-md);box-shadow:var(--shadow-2);font-size:.84rem;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:100;display:flex;align-items:center;gap:.5rem;max-width:90vw}
+.toast.is-shown{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast svg{width:16px;height:16px;color:var(--gold);flex:none}
+
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.modal-overlay.is-open{opacity:1;pointer-events:auto}
+.modal-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-2);padding:1.4rem;width:100%;max-width:400px;transform:translateY(10px);transition:transform .2s ease}
+.modal-overlay.is-open .modal-card{transform:translateY(0)}
+.modal-card .field{margin-top:1.1rem}
+.modal-card label{display:block;font-size:.72rem;font-weight:700;color:var(--text-2);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.modal-card select,.modal-card input[type="text"],.modal-card input[type="file"]{width:100%;padding:.6rem .75rem;border:1.5px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-2);color:var(--text-1);font-size:.86rem}
+.modal-actions{display:flex;gap:.6rem;margin-top:1.5rem}
+.modal-actions .btn{flex:1}
+
+
+
+/* Mobile sidebar drawer + responsive */
+.sb-overlay{
+  display:none;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;
+  transition:opacity .25s ease;pointer-events:none
+}
+.sb-overlay.is-open{opacity:1;pointer-events:auto}
+.sb-toggle{display:none}
+
+@media (max-width:980px){
+  .sb-toggle{
+    display:inline-flex;width:34px;height:34px;border-radius:9px;
+    align-items:center;justify-content:center;flex:none;color:var(--text-2);
+    border:1px solid var(--border-strong);margin-right:.25rem
+  }
+  .sb-toggle:hover{background:var(--surface-3)}
+
+  #app.is-active{grid-template-columns:1fr}
+  .sidebar{
+    position:fixed;top:0;left:0;width:280px;height:100vh;z-index:50;
+    transform:translateX(-100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    box-shadow:4px 0 40px rgba(0,0,0,.4)
+  }
+  .sidebar.is-open{transform:translateX(0)}
+  .sb-overlay.is-open{display:block}
+
+  .gsearch{max-width:none}
+  .page{padding:1rem}
+
+  .kpi-card{padding:.85rem}
+  .kpi-card .v{font-size:1.15rem}
+  @media (max-width:480px){.kpi-grid{grid-template-columns:1fr 1fr;gap:.6rem}}
+
+  .panel{padding:1rem}
+
+  .topbar{padding:.6rem .85rem;gap:.5rem}
+  .topbar-actions{gap:.35rem}
+  .user-chip .nm,.user-chip .rl{display:none!important}
+  .user-chip{padding:.25rem;border-radius:50%}
+
+  .gsearch .iw{padding:.35rem .65rem}
+
+  .subtabs{overflow-x:auto;gap:.3rem;padding-bottom:.3rem;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .subtab{flex:none;white-space:nowrap;font-size:.75rem;padding:.4rem .75rem}
+
+  .tc-head{flex-wrap:wrap}
+  .tc-head h3{min-width:auto;width:100%;font-size:.9rem}
+  .tc-search{min-width:0;flex:1}
+
+  .table-card{border-radius:var(--radius-sm)}
+  table.data td,table.data th{padding:.55rem .75rem;font-size:.8rem}
+  table.data th{font-size:.62rem}
+
+  .settings-card{padding:1rem}
+
+  .integ-grid{gap:.7rem}
+  .integ-card{padding:.85rem}
+
+  .gate-card{padding:1.5rem 1.2rem}
+  .gate-card h1{font-size:1.1rem}
+  .gate{padding:1rem}
+
+  .dropdown{width:260px;right:-8px}
+  .bell-dot{display:none}
+
+  .bar-chart{height:110px;gap:.4rem}
+  .bar-chart .bar .lbl{font-size:.6rem}
+  .hbar-row .lbl{width:60px;font-size:.72rem}
+  .hbar-row .val{width:30px;font-size:.68rem}
+
+  .alert-row{padding:.55rem;font-size:.78rem}
+  .activity-item{font-size:.78rem}
+  .page-head p{font-size:.82rem}
+  h2{font-size:1.15rem}
+}
+</style>
+</head>
+<body>
+
+<svg class="icon" style="position:absolute;width:0;height:0" aria-hidden="true">
+<defs>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 5-3.4 8-7 9-3.6-1-7-4-7-9V6l7-3z"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.4 2.9-5.5 6.5-5.5s6.5 2.1 6.5 5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.5 14.3c2.9.3 5 2.2 5 5.2"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.3" y1="15.3" x2="20.5" y2="20.5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.4 5.5 2 6.3H4c.6-.8 2-2.3 2-6.3z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="3" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21" y2="12"/><line x1="5.6" y1="5.6" x2="7.7" y2="7.7"/><line x1="16.3" y1="16.3" x2="18.4" y2="18.4"/><line x1="5.6" y1="18.4" x2="7.7" y2="16.3"/><line x1="16.3" y1="7.7" x2="18.4" y2="5.6"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="6.6" y2="6.6"/><line x1="17.4" y1="17.4" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="6.6" y2="17.4"/><line x1="17.4" y1="6.6" x2="19.1" y2="4.9"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><polyline points="14 3 14 7 18 7"/></symbol>
+<symbol id="i-coins" viewBox="0 0 24 24"><ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7"/><path d="M3 12v5c0 1.7 2.7 3 6 3 1 0 2-.1 2.8-.4"/><ellipse cx="17" cy="14" rx="4" ry="2.2"/><path d="M13 14v3.5c0 1.2 1.8 2.2 4 2.2s4-1 4-2.2V14"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><polygon points="12 3 21 8 12 13 3 8 12 3"/><polyline points="3 13 12 18 21 13"/><polyline points="3 17.5 12 22.5 21 17.5"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><rect x="4" y="12" width="16" height="9" rx="1"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8C10 4 6 5 6 7.5S9 8 12 8zM12 8c2-4 6-3 6-.5S15 8 12 8z"/></symbol>
+<symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="5" y1="15" x2="9" y2="15"/></symbol>
+<symbol id="i-store" viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11h18V9"/><path d="M9 20v-6h6v6"/><line x1="3" y1="9" x2="21" y2="9"/></symbol>
+<symbol id="i-pulse" viewBox="0 0 24 24"><polyline points="3 12 8 12 10 5 14 19 16 12 21 12"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><line x1="7" y1="9.5" x2="17" y2="9.5"/><line x1="7" y1="13" x2="13" y2="13"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></symbol>
+<symbol id="i-bar-chart" viewBox="0 0 24 24"><line x1="4" y1="20" x2="4" y2="12"/><line x1="10" y1="20" x2="10" y2="6"/><line x1="16" y1="20" x2="16" y2="14"/><line x1="21" y1="20" x2="21" y2="9"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M9 15l6-6"/><path d="M13 5.5l1.3-1.3a3.5 3.5 0 0 1 5 5L18 10.5"/><path d="M11 13.5l-1.3 1.3a3.5 3.5 0 0 1-5-5L6 8.5"/></symbol>
+<symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+<symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/><line x1="14" y1="7" x2="17" y2="10"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><polyline points="5 13 10 18 19 7"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 21 20 3 20z"/><line x1="12" y1="9" x2="12" y2="13.5"/><circle cx="12" cy="16.3" r=".4" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3c2.8 2.4 4.3 5.6 4.3 9s-1.5 6.6-4.3 9c-2.8-2.4-4.3-5.6-4.3-9S9.2 5.4 12 3z"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4"/><polyline points="7 9 12 4 17 9"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+</defs>
+</svg>
+
+<!-- ============ LOGIN GATE ============ -->
+<div class="gate grain" id="gate">
+  <span class="aurora aurora-1" aria-hidden="true"></span>
+  <span class="aurora aurora-2" aria-hidden="true"></span>
+  <div class="gate-card">
+    <div class="gate-brand"><span class="mark"><img src="logo.png" alt="WynCare"></span><span class="brand-name">Wyn<em>Care</em></span></div>
+    <h1>Panel de Administración</h1>
+    <p class="sub">Acceso interno para el equipo de WynCare</p>
+    <form id="gateForm">
+      <div class="field"><label>Correo electrónico</label><div class="iw"><svg class="icon"><use href="#i-mail"/></svg><input id="gateEmail" type="email" placeholder="tu@wyncare.es" autocomplete="username"></div></div>
+      <div class="field"><label>Contraseña</label><div class="iw"><svg class="icon"><use href="#i-lock"/></svg><input id="gatePass" type="password" placeholder="••••••••" autocomplete="current-password"></div></div>
+      <p id="gateError" style="display:none;color:var(--danger);font-size:.82rem;margin-top:.6rem"></p>
+      <button class="btn btn-primary" type="submit" style="width:100%;margin-top:1.3rem;padding-block:.8rem">Acceder al panel</button>
+    </form>
+    <p class="gate-legal">Acceso restringido al equipo de WynCare con permiso de administrador.</p>
+  </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-brand"><span class="mark" style="width:28px;height:28px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center"><img src="logo.png" alt="WynCare" style="width:100%;height:100%;object-fit:cover"></span><span class="brand-name">Wyn<em>Care</em></span> <span style="font-size:.65rem;color:var(--text-3);font-weight:500;margin-left:auto">Admin</span></div>
+
+    <nav id="sbNav">
+      <div class="sb-group-label">General</div>
+      <button class="sb-item" data-tab="resumen"><svg class="icon"><use href="#i-grid"/></svg>Resumen</button>
+      <button class="sb-item" data-tab="analitica"><svg class="icon"><use href="#i-bar-chart"/></svg>Analítica</button>
+
+      <div class="sb-group-label">CRM</div>
+      <button class="sb-item" data-tab="usuarios"><svg class="icon"><use href="#i-users"/></svg>Usuarios</button>
+      <button class="sb-item" data-tab="clientes"><svg class="icon"><use href="#i-user"/></svg>Clientes</button>
+
+      <div class="sb-group-label">Negocio</div>
+      <button class="sb-item" data-tab="polizas"><svg class="icon"><use href="#i-shield"/></svg>Pólizas</button>
+      <button class="sb-item" data-tab="presupuestos"><svg class="icon"><use href="#i-file"/></svg>Presupuestos</button>
+      <button class="sb-item" data-tab="siniestros"><svg class="icon"><use href="#i-alert"/></svg>Siniestros</button>
+      <button class="sb-item" data-tab="tarificacion"><svg class="icon"><use href="#i-link"/></svg>Tarificación real</button>
+      <button class="sb-item" data-tab="aseguradoras"><svg class="icon"><use href="#i-store"/></svg>Aseguradoras</button>
+
+      <div class="sb-group-label">Fidelización</div>
+      <button class="sb-item" data-tab="wynpoints"><svg class="icon"><use href="#i-coins"/></svg>WynPoints</button>
+      <button class="sb-item" data-tab="beneficios"><svg class="icon"><use href="#i-gift"/></svg>Beneficios</button>
+      <button class="sb-item" data-tab="comercios"><svg class="icon"><use href="#i-store"/></svg>Comercios</button>
+
+      <div class="sb-group-label">Salud y documentos</div>
+      <button class="sb-item" data-tab="telemedicina"><svg class="icon"><use href="#i-pulse"/></svg>Telemedicina</button>
+      <button class="sb-item" data-tab="documentos"><svg class="icon"><use href="#i-file"/></svg>Documentos</button>
+
+      <div class="sb-group-label">Comunicación</div>
+      <button class="sb-item" data-tab="mensajes"><svg class="icon"><use href="#i-chat"/></svg>Mensajes</button>
+      <button class="sb-item" data-tab="notificaciones"><svg class="icon"><use href="#i-bell"/></svg>Notificaciones</button>
+
+      <div class="sb-group-label">Sistema</div>
+      <button class="sb-item" data-tab="automatizaciones"><svg class="icon"><use href="#i-bolt"/></svg>Automatizaciones</button>
+      <button class="sb-item" data-tab="logs"><svg class="icon"><use href="#i-list"/></svg>Logs</button>
+      <button class="sb-item" data-tab="configuracion"><svg class="icon"><use href="#i-settings"/></svg>Configuración</button>
+    </nav>
+  </aside>
+  <div class="sb-overlay" id="sbOverlay"></div>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="sb-toggle" type="button" id="sbToggle" aria-label="Abrir menú"><svg class="icon" style="width:17px;height:17px"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
+      <div class="gsearch">
+        <div class="iw"><svg class="icon"><use href="#i-search"/></svg><input id="globalSearch" type="text" placeholder="Buscar cliente, póliza, referencia…"></div>
+        <div class="gsearch-results" id="gsearchResults"></div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" type="button" id="themeToggle" aria-label="Cambiar tema"><svg class="icon i-sun"><use href="#i-sun"/></svg><svg class="icon i-moon"><use href="#i-moon"/></svg></button>
+        <div class="bell-wrap">
+          <button class="btn-icon" type="button" id="bellBtn" aria-label="Notificaciones"><svg class="icon"><use href="#i-bell"/></svg></button>
+          <span class="bell-dot"></span>
+          <div class="dropdown" id="bellDropdown">
+            <div class="dropdown-head">Notificaciones</div>
+            <div class="dropdown-item"><div class="t">5 presupuestos nuevos sin contactar</div><div class="d">Hace 2 horas</div></div>
+            <div class="dropdown-item"><div class="t">3 documentos pendientes de verificar</div><div class="d">Hoy</div></div>
+            <div class="dropdown-item"><div class="t">Automatización "Informe semanal" pausada</div><div class="d">Hace 4 días</div></div>
+          </div>
+        </div>
+        <div style="position:relative">
+          <button class="user-chip" type="button" id="userBtn"><span class="av" id="userAvatar">G</span><span><span class="nm" id="userName" style="display:block">Gabriel Calvo</span><span class="rl" id="userRole">Admin</span></span></button>
+          <div class="dropdown" id="userDropdown" style="width:180px">
+            <button class="dropdown-link" id="logoutBtn"><svg class="icon" style="width:14px;height:14px;display:inline;margin-right:.4rem;vertical-align:-2px"><use href="#i-logout"/></svg>Cerrar sesión</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page">
+
+      <!-- RESUMEN -->
+      <div class="admin-tab is-active" id="tab-resumen">
+        <div class="page-head"><div><h2>Resumen</h2><p>Estado general de la plataforma WynCare</p></div></div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-users"/></svg></span><div class="v">1.248</div><div class="l">Clientes totales</div><div class="d up">+34 este mes</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-shield"/></svg></span><div class="v">892</div><div class="l">Pólizas activas</div><div class="d up">+58 este mes</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-coins"/></svg></span><div class="v">14.320€</div><div class="l">Comisión mensual est.</div><div class="d up">+8,4%</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-gift"/></svg></span><div class="v">2,1M</div><div class="l">WynPoints en circulación</div><div class="d">—</div></div>
+          <div class="kpi-card"><span class="ic"><svg class="icon" style="width:15px;height:15px"><use href="#i-chat"/></svg></span><div class="v">3</div><div class="l">Tickets abiertos</div><div class="d down">Requiere atención</div></div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Nuevas pólizas (últimos 6 meses)</h3><span class="sub">Total periodo: 441</span></div>
+            <div class="bar-chart" id="chartPolizas"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Pólizas por tipo</h3></div>
+            <div id="hbarTipos"></div>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Alertas</h3></div>
+            <div class="alert-row"><svg class="icon"><use href="#i-alert"/></svg><span>5 presupuestos nuevos sin contactar</span><a href="#" data-goto="presupuestos">Ver →</a></div>
+            <div class="alert-row"><svg class="icon"><use href="#i-alert"/></svg><span>3 documentos pendientes de verificar</span><a href="#" data-goto="documentos">Ver →</a></div>
+            <div class="alert-row"><svg class="icon"><use href="#i-alert"/></svg><span>1 automatización pausada</span><a href="#" data-goto="automatizaciones">Ver →</a></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Actividad reciente</h3></div>
+            <div id="activityFeed"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALÍTICA -->
+      <div class="admin-tab" id="tab-analitica">
+        <div class="page-head"><div><h2>Analítica</h2><p>Conversión, adquisición y uso del programa de fidelización</p></div></div>
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Clientes nuevos por semana</h3></div>
+            <div class="bar-chart" id="chartClientes"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Conversión presupuesto → póliza</h3></div>
+            <div class="funnel-row"><span class="l">Presupuestos creados</span><span class="r">340</span></div>
+            <div class="funnel-row"><span class="l">Contactados</span><span class="r">210</span></div>
+            <div class="funnel-row"><span class="l">Convertidos a póliza</span><span class="r">96</span></div>
+            <div class="funnel-row"><span class="l" style="color:var(--gold);font-weight:600">Tasa de conversión</span><span class="r" style="color:var(--gold)">28%</span></div>
+          </div>
+        </div>
+        <div class="panel-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>Canje de WynPoints por categoría</h3></div>
+            <div id="hbarCanjes"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>Distribución de clientes por nivel</h3></div>
+            <div id="hbarNiveles"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE-DRIVEN SECTIONS -->
+      <div class="admin-tab" id="tab-usuarios"><div id="mount-usuarios"></div></div>
+      <div class="admin-tab" id="tab-clientes"><div id="mount-clientes"></div></div>
+      <div class="admin-tab" id="tab-polizas"><div id="mount-polizas"></div></div>
+      <div class="admin-tab" id="tab-presupuestos"><div id="mount-presupuestos"></div></div>
+      <div class="admin-tab" id="tab-siniestros"><div id="mount-siniestros"></div></div>
+      <div class="admin-tab" id="tab-tarificacion"><div id="mount-tarificacion"></div></div>
+
+      <div class="admin-tab" id="tab-aseguradoras">
+        <div class="subtabs">
+          <button class="subtab" data-sub="aseguradoras" data-parent="aseguradoras" aria-selected="true">Aseguradoras</button>
+          <button class="subtab" data-sub="comisiones" data-parent="aseguradoras" aria-selected="false">Comisiones</button>
+        </div>
+        <div id="mount-aseguradoras"></div>
+        <div id="mount-comisiones" style="display:none"></div>
+      </div>
+
+      <div class="admin-tab" id="tab-wynpoints">
+        <div class="subtabs">
+          <button class="subtab" data-sub="wynpoints" data-parent="wynpoints" aria-selected="true">Movimientos</button>
+          <button class="subtab" data-sub="niveles" data-parent="wynpoints" aria-selected="false">Niveles</button>
+        </div>
+        <div id="mount-wynpoints"></div>
+        <div id="mount-niveles" style="display:none"></div>
+      </div>
+
+      <div class="admin-tab" id="tab-beneficios">
+        <div class="subtabs">
+          <button class="subtab" data-sub="beneficios" data-parent="beneficios" aria-selected="true">Beneficios</button>
+          <button class="subtab" data-sub="tarjetas" data-parent="beneficios" aria-selected="false">Tarjetas regalo</button>
+        </div>
+        <div id="mount-beneficios"></div>
+        <div id="mount-tarjetas" style="display:none"></div>
+      </div>
+
+      <div class="admin-tab" id="tab-comercios"><div id="mount-comercios"></div></div>
+      <div class="admin-tab" id="tab-telemedicina"><div id="mount-telemedicina"></div></div>
+      <div class="admin-tab" id="tab-documentos"><div id="mount-documentos"></div></div>
+      <div class="admin-tab" id="tab-mensajes"><div id="mount-mensajes"></div></div>
+      <div class="admin-tab" id="tab-notificaciones"><div id="mount-notificaciones"></div></div>
+      <div class="admin-tab" id="tab-automatizaciones"><div id="mount-automatizaciones"></div></div>
+      <div class="admin-tab" id="tab-logs"><div id="mount-logs"></div></div>
+
+      <!-- CONFIGURACIÓN -->
+      <div class="admin-tab" id="tab-configuracion">
+        <div class="page-head"><div><h2>Configuración</h2><p>Ajustes de la plataforma, roles e integraciones</p></div></div>
+        <div class="subtabs">
+          <button class="subtab" data-sub="general" data-parent="config" aria-selected="true">General</button>
+          <button class="subtab" data-sub="roles" data-parent="config" aria-selected="false">Roles y permisos</button>
+          <button class="subtab" data-sub="integraciones" data-parent="config" aria-selected="false">Integraciones</button>
+        </div>
+
+        <div id="config-general">
+          <div class="settings-card">
+            <h3 style="margin-bottom:1rem">General</h3>
+            <div class="field" style="margin-top:0"><label>Nombre de la plataforma</label><div class="iw"><input type="text" value="WynCare"></div></div>
+            <div class="field"><label>Dominio</label><div class="iw"><input type="text" value="wyncare.es"></div></div>
+            <div class="field"><label>Email de soporte</label><div class="iw"><input type="email" value="contacto@wyncare.es"></div></div>
+            <div class="field"><label>Zona horaria</label><div class="iw"><input type="text" value="Europe/Madrid"></div></div>
+            <button class="btn btn-primary" id="saveGeneralBtn" style="margin-top:1.2rem">Guardar cambios</button>
+          </div>
+        </div>
+
+        <div id="config-roles" style="display:none">
+          <div class="settings-card">
+            <h3 style="margin-bottom:1rem">Roles y permisos</h3>
+            <div class="tc-wrap">
+              <table class="data perm-table">
+                <thead><tr><th>Rol</th><th>Ver</th><th>Crear</th><th>Editar</th><th>Eliminar</th><th>Configuración</th></tr></thead>
+                <tbody>
+                  <tr><td>Admin</td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                  <tr><td>Soporte</td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                  <tr><td>Editor</td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                  <tr><td>Solo lectura</td><td><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td><td class="no"><svg class="icon"><use href="#i-check"/></svg></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p style="font-size:.78rem;color:var(--text-3);margin-top:1rem">La aplicación real de estos permisos llegará con las políticas de Row Level Security de Supabase.</p>
+          </div>
+        </div>
+
+        <div id="config-integraciones" style="display:none">
+          <div class="integ-grid">
+            <div class="integ-card">
+              <span class="ic"><svg class="icon"><use href="#i-database"/></svg></span>
+              <h4>Supabase</h4>
+              <p>Base de datos, autenticación y almacenamiento.</p>
+              <div class="st"><span class="badge tone-neutral" id="supabaseStatus">No conectado</span></div>
+              <button class="btn btn-quiet" style="margin-top:.9rem" data-integ="Supabase">Conectar</button>
+            </div>
+            <div class="integ-card">
+              <span class="ic"><svg class="icon"><use href="#i-link"/></svg></span>
+              <h4>n8n</h4>
+              <p>Automatizaciones y flujos de trabajo.</p>
+              <div class="st"><span class="badge tone-neutral">No conectado</span></div>
+              <button class="btn btn-quiet" style="margin-top:.9rem" data-integ="n8n">Conectar</button>
+            </div>
+            <div class="integ-card">
+              <span class="ic"><svg class="icon"><use href="#i-chat"/></svg></span>
+              <h4>Teddy (IA)</h4>
+              <p>Asistente del Área Cliente, vía API de Claude.</p>
+              <div class="st"><span class="badge tone-success">Conectado</span></div>
+              <button class="btn btn-quiet" style="margin-top:.9rem" disabled>Configurado</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg class="icon"><use href="#i-alert"/></svg><span id="toastMsg"></span></div>
+
+<!-- Sin "defer": tiene que estar listo antes del script principal, que lo
+     usa nada más arrancar (comprobar sesión, gate de login). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+"use strict";
+
+var SUPABASE_URL = 'https://gpcavoymhsivyorkxbam.supabase.co';
+var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwY2F2b3ltaHNpdnlvcmt4YmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDcwNTUsImV4cCI6MjA5OTcyMzA1NX0.XA5GglnK6gn82HvV3CL7J2xzkQsGqFuRbhvG-yFERDU';
+// Igual que en app.js: la variable no puede llamarse "supabase" (choca con
+// la global que declara la propia librería del CDN).
+var sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: { autoRefreshToken: true, persistSession: true, storageKey: 'wyncare-admin-auth' }
+    })
+  : null;
+var currentAdminUser = null;
+
+/* Escapa texto antes de meterlo en innerHTML. Con los datos mock da igual,
+   pero cuando las tablas se alimenten de Supabase será obligatorio. */
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+/* Igual que en app.js: "quotes"/"policies" no guardan una referencia legible,
+   así que la fabricamos a partir del uuid para mostrarla en el panel. */
+function friendlyRef(prefix, id){ return prefix + '-' + String(id || '').replace(/-/g, '').slice(0, 8).toUpperCase(); }
+
+/* Traducción entre los valores reales de los enums de Supabase y las
+   etiquetas en español que muestra el panel. */
+var QUOTE_STATUS_LABELS = {
+  draft: 'Borrador', saved: 'Guardado', requested: 'Solicitado', converted: 'Convertido', expired: 'Expirado',
+  pending_docs: 'Pendiente documentación', in_review: 'Verificación', validated: 'Validado', rejected: 'Rechazado'
+};
+var QUOTE_STATUS_BY_LABEL = {};
+Object.keys(QUOTE_STATUS_LABELS).forEach(function(k){ QUOTE_STATUS_BY_LABEL[QUOTE_STATUS_LABELS[k]] = k; });
+
+var POLICY_STATUS_LABELS = { active: 'Activa', pending: 'Pendiente', cancelled: 'Cancelada', expired: 'Expirada' };
+
+var RATING_JOB_STATUS_LABELS = { pending: 'Pendiente', processing: 'Procesando', done: 'Completado', failed: 'Fallido' };
+var RATING_JOB_STATUS_BY_LABEL = {};
+Object.keys(RATING_JOB_STATUS_LABELS).forEach(function(k){ RATING_JOB_STATUS_BY_LABEL[RATING_JOB_STATUS_LABELS[k]] = k; });
+
+// Tasa de comisión provisional por tipo de seguro — configurada a mano
+// (misma cifra que ya se mostraba en el mock de "Aseguradoras" para el ramo
+// correspondiente), no automatizada todavía con ninguna aseguradora real.
+// Se aplica sobre la prima mensual de la póliza al crearla.
+var COMMISSION_RATE = { coche: 0.12, hogar: 0.10, salud: 0.15, vida: 0.11, empresa: 0.13, mascotas: 0.10 };
+function commissionFor(type, premium){
+  var rate = COMMISSION_RATE[(type || '').toLowerCase()];
+  if (rate == null || premium == null) return null;
+  return Math.round(premium * rate * 100) / 100;
+}
+
+function formatDateEs(d){
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('es-ES'); } catch (e) { return '—'; }
+}
+
+function formatEsNumber(n){
+  var fixed = Math.round(n).toString();
+  var sign = fixed.charAt(0) === '-' ? '-' : '';
+  if (sign) fixed = fixed.slice(1);
+  return sign + fixed.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// A diferencia de formatEsNumber (puntos, sin decimales), una cifra de
+// dinero real como la comisión sí pierde precisión si se redondea a euros
+// enteros — aquí se mantienen los céntimos.
+function formatEuros(n){
+  return (n || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* Mismos umbrales que getTier() en app.js: hay que mantenerlos sincronizados
+   si cambia el programa de niveles. */
+function getTier(points){
+  if (points >= 6000) return 'Oro';
+  if (points >= 2000) return 'Plata';
+  return 'Bronce';
+}
+
+function isSameMonth(dateStr, ref){
+  if (!dateStr) return false;
+  var d = new Date(dateStr);
+  return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
+}
+
+function monthKeyEs(dateStr){
+  if (!dateStr) return '—';
+  var d = new Date(dateStr);
+  var label = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/* ---------- TEMA ---------- */
+var root = document.documentElement;
+function setTheme(mode){ root.setAttribute('data-theme', mode); }
+document.getElementById('themeToggle').addEventListener('click', function(){
+  setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+try{
+  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) setTheme('light');
+}catch(e){}
+
+/* ---------- TOAST ---------- */
+var toastEl = document.getElementById('toast');
+var toastMsg = document.getElementById('toastMsg');
+var toastTimer = null;
+function showToast(msg){
+  toastMsg.textContent = msg;
+  toastEl.classList.add('is-shown');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('is-shown'); }, 3200);
+}
+
+/* ---------- MODAL GENÉRICO ---------- */
+// Todavía sin Supabase: guarda los cambios solo en memoria (cfg.rows) para
+// poder validar el flujo completo; al conectar el backend esto pasa a ser
+// un update/insert real + subida a Storage.
+function openModal(innerHtml){
+  var overlay = document.getElementById('modalOverlay');
+  if (!overlay){
+    overlay = document.createElement('div');
+    overlay.id = 'modalOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = '<div class="modal-card" id="modalCard"></div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeModal(); });
+  }
+  document.getElementById('modalCard').innerHTML = innerHtml;
+  overlay.classList.add('is-open');
+}
+function closeModal(){
+  var overlay = document.getElementById('modalOverlay');
+  if (overlay) overlay.classList.remove('is-open');
+}
+
+/* ---------- LOGIN GATE ---------- */
+// Solo entra quien tenga sesión real en Supabase Y profiles.role = 'admin'
+// (ver supabase/migrations/20260721120300_admin_role.sql). Cualquier otra
+// cuenta se cierra la sesión al momento y no ve nada del panel.
+function showGateError(msg){
+  var errEl = document.getElementById('gateError');
+  if (errEl) { errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; }
+}
+
+function showAdminApp(name){
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userAvatar').textContent = (name.charAt(0) || 'A').toUpperCase();
+  document.getElementById('userRole').textContent = 'Admin';
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').classList.add('is-active');
+  animateTabIn(document.getElementById('tab-resumen'));
+}
+
+async function checkAdminAndEnter(user){
+  try {
+    var res = await sb.from('profiles').select('full_name, role').eq('id', user.id).single();
+    if (res.error || !res.data || res.data.role !== 'admin') {
+      await sb.auth.signOut();
+      currentAdminUser = null;
+      showGateError('Esta cuenta no tiene permiso de administrador.');
+      return false;
+    }
+    currentAdminUser = user;
+    showAdminApp(res.data.full_name || (user.email || '').split('@')[0] || 'Admin');
+    refreshPresupuestos();
+    refreshPolizas();
+    refreshSiniestros();
+    refreshTarificacion();
+    refreshComisiones();
+    refreshUsuarios();
+    refreshClientes();
+    refreshWynpoints();
+    return true;
+  } catch (e) {
+    showGateError('No se pudo comprobar el permiso de administrador. Inténtalo de nuevo.');
+    return false;
+  }
+}
+
+document.getElementById('gateForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  showGateError('');
+  if (!sb) { showGateError('No se pudo conectar con el servidor. Revisa tu conexión.'); return; }
+  var email = document.getElementById('gateEmail').value.trim();
+  var password = document.getElementById('gatePass').value;
+  var btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true; btn.textContent = 'Accediendo...';
+  try {
+    var { data, error } = await sb.auth.signInWithPassword({ email: email, password: password });
+    if (error) { showGateError('Email o contraseña incorrectos.'); return; }
+    await checkAdminAndEnter(data.user);
+  } catch (e2) {
+    showGateError('No se pudo conectar con el servidor. Revisa tu conexión.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Acceder al panel';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async function(){
+  if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+  currentAdminUser = null;
+  document.getElementById('app').classList.remove('is-active');
+  document.getElementById('gate').style.display = 'flex';
+});
+
+// Si ya había sesión (recarga de página), entra directo sin pedir login otra vez.
+(async function checkExistingSession(){
+  if (!sb) return;
+  try {
+    var { data } = await sb.auth.getSession();
+    if (data && data.session && data.session.user) await checkAdminAndEnter(data.session.user);
+  } catch (e) {}
+})();
+
+/* ---------- DROPDOWNS ---------- */
+function setupDropdown(btnId, dropId){
+  var btn = document.getElementById(btnId), drop = document.getElementById(dropId);
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    var open = drop.classList.contains('is-open');
+    document.querySelectorAll('.dropdown.is-open').forEach(function(d){ d.classList.remove('is-open'); });
+    if (!open) drop.classList.add('is-open');
+  });
+}
+setupDropdown('bellBtn', 'bellDropdown');
+setupDropdown('userBtn', 'userDropdown');
+document.addEventListener('click', function(){ document.querySelectorAll('.dropdown.is-open').forEach(function(d){ d.classList.remove('is-open'); }); });
+
+/* ---------- ROUTER (sidebar tabs) ---------- */
+function animateTabIn(panel){
+  if (!panel) return;
+  var animated = panel.querySelectorAll('.kpi-card,.panel,.table-card,.settings-card,.integ-card');
+  animated.forEach(function(el, i){
+    el.classList.remove('tab-anim');
+    void el.offsetWidth;
+    el.style.animationDelay = Math.min(i * 40, 320) + 'ms';
+    el.classList.add('tab-anim');
+  });
+}
+function switchTab(tab){
+  document.querySelectorAll('.sb-item[data-tab]').forEach(function(item){
+    if (item.dataset.tab === tab) item.setAttribute('aria-current','page'); else item.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('.admin-tab').forEach(function(p){ p.classList.remove('is-active'); });
+  var panel = document.getElementById('tab-' + tab);
+  if (panel) { panel.classList.add('is-active'); animateTabIn(panel); }
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.sb-item[data-tab]').forEach(function(item){
+  item.addEventListener('click', function(){ switchTab(item.dataset.tab); });
+});
+document.querySelectorAll('[data-goto]').forEach(function(a){
+  a.addEventListener('click', function(e){ e.preventDefault(); switchTab(a.dataset.goto); });
+});
+
+/* ---------- SUBTABS ---------- */
+document.querySelectorAll('.subtab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var parent = btn.dataset.parent, sub = btn.dataset.sub;
+    document.querySelectorAll('.subtab[data-parent="'+parent+'"]').forEach(function(b){ b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
+    if (parent === 'config'){
+      ['general','roles','integraciones'].forEach(function(k){ document.getElementById('config-'+k).style.display = (k===sub) ? '' : 'none'; });
+    } else {
+      document.querySelectorAll('.subtab[data-parent="'+parent+'"]').forEach(function(b){
+        var mount = document.getElementById('mount-' + b.dataset.sub);
+        if (mount) mount.style.display = (b === btn) ? '' : 'none';
+      });
+    }
+  });
+});
+
+/* ---------- BADGE TONES ---------- */
+var TONE_MAP = {
+  'Activo':'success','Activa':'success','Verificado':'success','Resuelto':'success','Sí':'success','Liquidada':'success','Validado':'success','Convertido':'success',
+  'Pendiente':'warning','Nuevo':'warning','En proceso':'warning','Pendiente documentación':'warning','Verificación':'warning','Solicitado':'warning',
+  'Cancelada':'danger','Inactivo':'danger','De baja':'danger','No':'danger','Rechazado':'danger','Expirada':'danger','Expirado':'danger',
+  'Pausado':'neutral','Borrador':'neutral','Guardado':'neutral',
+  'Admin':'gold','Oro':'gold'
+};
+function badgeHtml(v){ var tone = TONE_MAP[v] || 'neutral'; return '<span class="badge tone-'+tone+'">'+esc(v)+'</span>'; }
+
+/* ---------- GENERIC TABLE RENDERER ---------- */
+function mountTable(containerId, cfg){
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  // Si ya se montó antes (p. ej. al refrescar Presupuestos/Pólizas con datos
+  // reales tras el login), no reconstruimos el DOM ni volvemos a enganchar
+  // los listeners: solo repintamos filas y estadísticas con cfg actualizado.
+  if (el._wynRefresh) { el._wynRefresh(); return; }
+  var uid = containerId;
+  var statsHtml = (cfg.stats || []).map(function(s, i){ return '<div class="tc-stat"><div class="v" id="'+uid+'-stat-'+i+'">'+esc(s[0])+'</div><div class="l">'+esc(s[1])+'</div></div>'; }).join('');
+  var html = '<div class="table-card">';
+  if (statsHtml) html += '<div class="tc-stats">'+statsHtml+'</div>';
+  html += '<div class="tc-head"><h3>'+cfg.title+'</h3>';
+  html += '<div class="tc-search"><svg class="icon"><use href="#i-search"/></svg><input type="text" placeholder="Buscar…" data-search="'+uid+'"></div>';
+  html += '<button class="btn btn-primary" data-add="'+uid+'"><svg class="icon"><use href="#i-plus"/></svg>'+(cfg.addLabel||'Nuevo')+'</button>';
+  html += '</div><div class="tc-wrap"><table class="data" id="'+uid+'-table"><thead><tr>';
+  cfg.columns.forEach(function(c){ html += '<th'+(c.align==='right'?' class="al-right"':'')+'>'+c.label+'</th>'; });
+  html += '<th class="al-right">Acciones</th></tr></thead><tbody id="'+uid+'-tbody"></tbody></table></div>';
+  html += '<div class="tc-empty" id="'+uid+'-empty" style="display:none">Sin resultados para tu búsqueda.</div>';
+  html += '</div>';
+  el.innerHTML = html;
+
+  function renderRows(filter){
+    var tbody = document.getElementById(uid+'-tbody');
+    var q = (filter||'').toLowerCase();
+    var rows = cfg.rows.filter(function(r){
+      if (!q) return true;
+      return cfg.columns.some(function(c){ return String(r[c.key]||'').toLowerCase().indexOf(q) > -1; });
+    });
+    tbody.innerHTML = rows.map(function(r){
+      var idx = cfg.rows.indexOf(r);
+      var tds = cfg.columns.map(function(c){
+        var val = r[c.key];
+        var content = c.badge ? badgeHtml(val) : (c.mono ? '<span class="mono">'+esc(val)+'</span>' : esc(val));
+        return '<td'+(c.align==='right'?' class="al-right"':'')+'>'+content+'</td>';
+      }).join('');
+      var manageBtn = cfg.manageAction ? '<button class="btn-icon" data-row-manage="'+idx+'" title="'+esc(cfg.manageAction.label)+'"><svg class="icon"><use href="#i-upload"/></svg></button>' : '';
+      tds += '<td class="al-right"><span class="row-actions">'+manageBtn+'<button class="btn-icon" data-row-edit><svg class="icon"><use href="#i-pencil"/></svg></button><button class="btn-icon" data-row-del><svg class="icon"><use href="#i-trash"/></svg></button></span></td>';
+      return '<tr>'+tds+'</tr>';
+    }).join('');
+    document.getElementById(uid+'-empty').style.display = rows.length ? 'none' : 'block';
+  }
+  renderRows('');
+  var searchInput = el.querySelector('[data-search="'+uid+'"]');
+  searchInput.addEventListener('input', function(e){ renderRows(e.target.value); });
+  el.querySelector('[data-add="'+uid+'"]').addEventListener('click', function(){ showToast('Esta acción se activará al conectar Supabase.'); });
+  el.addEventListener('click', function(e){
+    var manageBtn = e.target.closest('[data-row-manage]');
+    if (manageBtn && cfg.manageAction){
+      var idx = parseInt(manageBtn.getAttribute('data-row-manage'), 10);
+      openManageModal(cfg, idx, function(){ renderRows(searchInput.value); });
+      return;
+    }
+    if (e.target.closest('[data-row-edit]') || e.target.closest('[data-row-del]')) showToast('Esta acción se activará al conectar Supabase.');
+  });
+  el._wynRefresh = function(){
+    (cfg.stats || []).forEach(function(s, i){
+      var statEl = document.getElementById(uid+'-stat-'+i);
+      if (statEl) statEl.textContent = s[0];
+    });
+    renderRows(searchInput.value);
+  };
+}
+
+/* ---------- GESTIÓN: cambio de estado + subida de documento ---------- */
+function openManageModal(cfg, idx, onSaved){
+  var row = cfg.rows[idx];
+  var ma = cfg.manageAction;
+  var statusHtml = ma.statusOptions ? (
+    '<div class="field"><label>Estado</label><select id="modalStatus">' +
+      ma.statusOptions.map(function(s){ return '<option value="'+esc(s)+'"'+(s === row.estado ? ' selected' : '')+'>'+esc(s)+'</option>'; }).join('') +
+    '</select></div>'
+  ) : '';
+  var reasonHtml = ma.statusOptions ? (
+    '<div class="field" id="modalReasonField" style="display:'+(row.estado === 'Rechazado' ? '' : 'none')+'">' +
+      '<label>Motivo del rechazo</label><input type="text" id="modalReason" value="'+esc(row.motivo || '')+'" placeholder="Ej: Falta el CIF de la empresa">' +
+    '</div>'
+  ) : '';
+  var fileHtml = ma.fileLabel ? (
+    '<div class="field"><label>'+esc(ma.fileLabel)+'</label><input type="file" id="modalFile" accept="application/pdf">' +
+    (row.documento ? '<p style="font-size:.78rem;color:var(--text-3);margin-top:.4rem">Archivo actual: '+esc(row.documento)+'</p>' : '') +
+    '</div>'
+  ) : '';
+  // Bloque de solo lectura (p.ej. datos extraídos del PDF / motivo de un
+  // fallo en la tarificación) — no todos los manageAction lo necesitan.
+  var detailHtml = (ma.detailLabel && row.detalle) ? (
+    '<div class="field"><label>'+esc(ma.detailLabel)+'</label>' +
+    '<pre style="white-space:pre-wrap;word-break:break-word;font-size:.78rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem;margin-top:.3rem;max-height:180px;overflow:auto">'+esc(row.detalle)+'</pre>' +
+    '</div>'
+  ) : '';
+
+  openModal(
+    '<h3>'+esc(ma.label)+'</h3><p style="font-size:.8rem;color:var(--text-3);margin-top:.2rem">'+esc(row.ref || row.cliente || '')+'</p>' +
+    statusHtml + reasonHtml + detailHtml + fileHtml +
+    '<div class="modal-actions"><button class="btn btn-ghost" id="modalCancel" type="button">Cancelar</button><button class="btn btn-primary" id="modalSave" type="button">Guardar</button></div>'
+  );
+
+  var statusSel = document.getElementById('modalStatus');
+  if (statusSel) statusSel.addEventListener('change', function(){
+    var reasonField = document.getElementById('modalReasonField');
+    if (reasonField) reasonField.style.display = (statusSel.value === 'Rechazado') ? '' : 'none';
+  });
+
+  document.getElementById('modalCancel').addEventListener('click', closeModal);
+  document.getElementById('modalSave').addEventListener('click', async function(){
+    var btn = this;
+    var reasonInput = document.getElementById('modalReason');
+    var fileInput = document.getElementById('modalFile');
+    var changes = {
+      estado: statusSel ? statusSel.value : undefined,
+      motivo: reasonInput ? reasonInput.value : undefined,
+      file: (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null
+    };
+    btn.disabled = true; btn.textContent = 'Guardando...';
+    try {
+      if (ma.persist) await ma.persist(row, changes);
+      if (statusSel) row.estado = changes.estado;
+      if (reasonInput) row.motivo = changes.motivo;
+      if (changes.file) row.documento = changes.file.name;
+      closeModal();
+      onSaved();
+      showToast(ma.persist ? 'Guardado en Supabase.' : 'Guardado localmente. Esto quedará permanente al conectar Supabase.');
+    } catch (err) {
+      showToast('Error al guardar: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Guardar';
+    }
+  });
+}
+
+/* ---------- DATA ---------- */
+var D = {
+  usuarios:{
+    title:'Usuarios', addLabel:'Nuevo usuario',
+    stats:[['—','cuentas de equipo (rol admin)']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'email',label:'Email',mono:true},{key:'rol',label:'Rol',badge:true},{key:'estado',label:'Estado',badge:true},{key:'acceso',label:'Último acceso',align:'right'}],
+    rows:[]
+  },
+  clientes:{
+    title:'Clientes', addLabel:'Nuevo cliente',
+    stats:[['—','clientes totales'],['—','con póliza activa'],['—','este mes']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'email',label:'Email',mono:true},{key:'nivel',label:'Nivel',badge:true},{key:'seguros',label:'Seguros'},{key:'pts',label:'WynPoints',align:'right'},{key:'alta',label:'Alta',align:'right'}],
+    rows:[]
+  },
+  polizas:{
+    title:'Pólizas', addLabel:'Nueva póliza',
+    stats:[['—','pólizas activas'],['—','nuevas (6 meses)'],['—','pendientes']],
+    columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'aseguradora',label:'Aseguradora'},{key:'prima',label:'Prima',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'renovacion',label:'Renovación',align:'right'}],
+    manageAction:{
+      label:'Subir documento', fileLabel:'Documento de la póliza (PDF)',
+      persist: async function(row, changes){
+        if (!sb || !changes.file) return;
+        var path = 'policies/' + row._id + '/' + Date.now() + '_' + changes.file.name;
+        var up = await sb.storage.from('documents').upload(path, changes.file, { upsert: true });
+        if (up.error) throw up.error;
+        var signed = await sb.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365);
+        if (signed.error) throw signed.error;
+        var ins = await sb.from('policy_documents').insert({ policy_id: row._id, name: changes.file.name, url: signed.data.signedUrl });
+        if (ins.error) throw ins.error;
+      }
+    },
+    rows:[]
+  },
+  presupuestos:{
+    title:'Presupuestos', addLabel:'Nuevo presupuesto',
+    stats:[['—','creados'],['—','pendientes de validar'],['—','tasa de validación']],
+    columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente / contacto'},{key:'tipo',label:'Tipo'},{key:'precio',label:'Precio est.',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    manageAction:{
+      label:'Gestionar presupuesto', fileLabel:'Presupuesto validado (PDF)',
+      statusOptions:['Pendiente documentación','Verificación','Validado','Rechazado'],
+      persist: async function(row, changes){
+        if (!sb) return;
+        var updates = {};
+        if (changes.estado) updates.status = QUOTE_STATUS_BY_LABEL[changes.estado] || changes.estado;
+        updates.rejection_reason = changes.estado === 'Rechazado' ? (changes.motivo || null) : null;
+        if (changes.file) {
+          var path = 'quotes/' + row._id + '/' + Date.now() + '_' + changes.file.name;
+          var up = await sb.storage.from('documents').upload(path, changes.file, { upsert: true });
+          if (up.error) throw up.error;
+          var signed = await sb.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365);
+          if (signed.error) throw signed.error;
+          updates.document_url = signed.data.signedUrl;
+        }
+        var { error } = await sb.from('quotes').update(updates).eq('id', row._id);
+        if (error) throw error;
+        // Puente cotización → póliza: hasta ahora, validar un presupuesto no
+        // creaba ninguna póliza real (solo actualizaba "quotes"). Al pasar a
+        // "validated", damos de alta la póliza si todavía no existe una para
+        // esta cotización (quote_id evita duplicar si se repite la acción).
+        if (updates.status === 'validated') {
+          var existing = await sb.from('policies').select('id').eq('quote_id', row._id).maybeSingle();
+          if (existing.error) throw existing.error;
+          if (!existing.data) {
+            var insPolicy = await sb.from('policies').insert({
+              user_id: row._userId,
+              quote_id: row._id,
+              type: row._type,
+              premium: row._premium,
+              commission_amount: commissionFor(row._type, row._premium),
+              reference: friendlyRef('WC', row._id),
+              status: 'active'
+            });
+            if (insPolicy.error) throw insPolicy.error;
+            await refreshPolizas();
+          }
+        }
+      }
+    },
+    rows:[]
+  },
+  siniestros:{
+    title:'Siniestros', addLabel:'Nuevo siniestro',
+    stats:[['—','totales'],['—','abiertos'],['—','resueltos']],
+    columns:[{key:'ref',label:'Referencia',mono:true},{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'fecha',label:'Fecha incidente',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    manageAction:{
+      label:'Gestionar siniestro',
+      statusOptions:['Enviado','En revisión','Resuelto','Rechazado'],
+      persist: async function(row, changes){
+        if (!sb) return;
+        var updates = { status: changes.estado };
+        updates.resolution_note = changes.estado === 'Rechazado' ? (changes.motivo || null) : null;
+        var { error } = await sb.from('claims').update(updates).eq('id', row._id);
+        if (error) throw error;
+      }
+    },
+    rows:[]
+  },
+  tarificacion:{
+    title:'Tarificación real', addLabel:'Nuevo job',
+    stats:[['—','totales'],['—','pendientes'],['—','fallidos']],
+    columns:[{key:'ref',label:'Presupuesto',mono:true},{key:'cliente',label:'Cliente'},{key:'aseguradora',label:'Aseguradora'},{key:'precio',label:'Precio real',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    manageAction:{
+      label:'Ver / reintentar', detailLabel:'Datos extraídos / error',
+      statusOptions:['Pendiente','Procesando','Completado','Fallido'],
+      persist: async function(row, changes){
+        if (!sb) return;
+        var updates = { status: RATING_JOB_STATUS_BY_LABEL[changes.estado] || changes.estado, updated_at: new Date().toISOString() };
+        var { error } = await sb.from('rating_jobs').update(updates).eq('id', row._id);
+        if (error) throw error;
+      }
+    },
+    rows:[]
+  },
+  aseguradoras:{
+    title:'Aseguradoras', addLabel:'Nueva aseguradora',
+    stats:[['5','aseguradoras aliadas'],['1.034','pólizas repartidas'],['12,2%','comisión media']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'ramos',label:'Ramos'},{key:'polizas',label:'Pólizas activas',align:'right'},{key:'comision',label:'Comisión',align:'right'},{key:'contacto',label:'Contacto',mono:true}],
+    rows:[
+      {nombre:'AXA',ramos:'Coche / Vida',polizas:'412',comision:'12%',contacto:'comercial@axa.es'},
+      {nombre:'Mapfre',ramos:'Hogar',polizas:'298',comision:'10%',contacto:'partners@mapfre.es'},
+      {nombre:'Sanitas',ramos:'Salud',polizas:'187',comision:'15%',contacto:'corredores@sanitas.es'},
+      {nombre:'Allianz',ramos:'Vida / Empresa',polizas:'96',comision:'11%',contacto:'broker@allianz.es'},
+      {nombre:'Generali',ramos:'Empresa',polizas:'41',comision:'13%',contacto:'canal@generali.es'}
+    ]
+  },
+  comisiones:{
+    title:'Comisiones', addLabel:'Registrar liquidación',
+    stats:[['—','comisión del mes'],['—','acumulada'],['—','pólizas con comisión']],
+    // Sin "Aseguradora" todavía: las pólizas no tienen un asegurador real
+    // asignado (ver "Aseguradoras", que sigue siendo mock) — por eso se
+    // agrega por mes en vez de por aseguradora, y "Estado" es siempre
+    // "Pendiente" (no existe ningún flujo real de liquidación aún).
+    columns:[{key:'mes',label:'Mes'},{key:'nuevas',label:'Pólizas',align:'right'},{key:'comision',label:'Comisión',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[]
+  },
+  wynpoints:{
+    title:'Movimientos de WynPoints', addLabel:'Ajuste manual',
+    stats:[['—','pts en circulación'],['—','emitidos este mes'],['—','canjeados este mes']],
+    columns:[{key:'cliente',label:'Cliente'},{key:'motivo',label:'Motivo'},{key:'pts',label:'Puntos',align:'right'},{key:'fecha',label:'Fecha',align:'right'}],
+    rows:[]
+  },
+  niveles:{
+    title:'Niveles', addLabel:'Nuevo nivel',
+    stats:[['3','niveles activos']],
+    columns:[{key:'nivel',label:'Nivel',badge:true},{key:'umbral',label:'Umbral',align:'right'},{key:'beneficio',label:'Beneficio principal'}],
+    rows:[
+      {nivel:'Bronce',umbral:'0 – 1.999 pts',beneficio:'Sin bonus de canje'},
+      {nivel:'Plata',umbral:'2.000 – 5.999 pts',beneficio:'+10% bonus canje · Ofertas exclusivas'},
+      {nivel:'Oro',umbral:'6.000+ pts',beneficio:'+20% bonus canje · Prioridad en telemedicina'}
+    ]
+  },
+  beneficios:{
+    title:'Beneficios', addLabel:'Nuevo beneficio',
+    stats:[['6','activos'],['140','canjes este mes']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'categoria',label:'Categoría'},{key:'coste',label:'Coste',align:'right'},{key:'canjes',label:'Canjes/mes',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Tarjeta Amazon 10€',categoria:'Regalo',coste:'800 pts',canjes:'34',estado:'Activo'},
+      {nombre:'5€ en gasolina',categoria:'Movilidad',coste:'400 pts',canjes:'51',estado:'Activo'},
+      {nombre:'Mes de gimnasio',categoria:'Bienestar',coste:'1.200 pts',canjes:'12',estado:'Activo'},
+      {nombre:'2 entradas de cine',categoria:'Ocio',coste:'600 pts',canjes:'22',estado:'Activo'},
+      {nombre:'Revisión dental gratis',categoria:'Salud',coste:'1.500 pts',canjes:'6',estado:'Pausado'},
+      {nombre:'Descuento óptica 20%',categoria:'Salud',coste:'500 pts',canjes:'15',estado:'Activo'}
+    ]
+  },
+  tarjetas:{
+    title:'Tarjetas regalo', addLabel:'Nueva tarjeta',
+    stats:[['322','en stock']],
+    columns:[{key:'proveedor',label:'Proveedor'},{key:'valor',label:'Valor',align:'right'},{key:'stock',label:'Stock',align:'right'},{key:'coste',label:'Coste',align:'right'}],
+    rows:[
+      {proveedor:'Amazon',valor:'10€',stock:'128',coste:'800 pts'},
+      {proveedor:'El Corte Inglés',valor:'15€',stock:'64',coste:'1.100 pts'},
+      {proveedor:'Decathlon',valor:'10€',stock:'90',coste:'800 pts'},
+      {proveedor:'Zara',valor:'20€',stock:'40',coste:'1.500 pts'}
+    ]
+  },
+  comercios:{
+    title:'Comercios colaboradores', addLabel:'Nuevo comercio',
+    stats:[['6','comercios'],['5','activos']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'categoria',label:'Categoría'},{key:'descuento',label:'Descuento'},{key:'ciudad',label:'Ciudad'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Repsol',categoria:'Gasolinera',descuento:'5%',ciudad:'Nacional',estado:'Activo'},
+      {nombre:'Basic-Fit',categoria:'Gimnasio',descuento:'1 mes gratis',ciudad:'Nacional',estado:'Activo'},
+      {nombre:'Cinesa',categoria:'Cine',descuento:'2x1',ciudad:'Nacional',estado:'Activo'},
+      {nombre:'Óptica Universitaria',categoria:'Óptica',descuento:'20%',ciudad:'Barcelona',estado:'Activo'},
+      {nombre:'Clínica Dental Sonrisa',categoria:'Dental',descuento:'Revisión gratis',ciudad:'Madrid',estado:'Activo'},
+      {nombre:'Peluquería Nômade',categoria:'Barbería',descuento:'15%',ciudad:'Valencia',estado:'Pendiente'}
+    ]
+  },
+  telemedicina:{
+    title:'Especialistas', addLabel:'Nuevo especialista',
+    stats:[['5','especialistas'],['569','consultas/mes']],
+    columns:[{key:'nombre',label:'Especialista'},{key:'especialidad',label:'Especialidad'},{key:'consultas',label:'Consultas/mes',align:'right'},{key:'valoracion',label:'Valoración',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Dra. Elena Martínez',especialidad:'Medicina general',consultas:'214',valoracion:'4.9',estado:'Activo'},
+      {nombre:'Dr. Carlos Núñez',especialidad:'Pediatría',consultas:'98',valoracion:'4.8',estado:'Activo'},
+      {nombre:'Dra. Sara Puig',especialidad:'Psicología',consultas:'156',valoracion:'4.9',estado:'Activo'},
+      {nombre:'Dr. Iván Rodrigo',especialidad:'Nutrición',consultas:'61',valoracion:'4.7',estado:'Activo'},
+      {nombre:'Dra. Marta Ibáñez',especialidad:'Dermatología',consultas:'40',valoracion:'4.6',estado:'De baja'}
+    ]
+  },
+  documentos:{
+    title:'Documentos', addLabel:'Subir documento',
+    stats:[['4','verificados'],['2','pendientes']],
+    columns:[{key:'cliente',label:'Cliente'},{key:'tipo',label:'Tipo'},{key:'poliza',label:'Póliza',mono:true},{key:'subido',label:'Subido',align:'right'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {cliente:'Ana García',tipo:'DNI',poliza:'WC-2024-003',subido:'10/03/2024',estado:'Verificado'},
+      {cliente:'Ana García',tipo:'Padrón',poliza:'WC-2024-002',subido:'10/03/2024',estado:'Verificado'},
+      {cliente:'Núria Soler',tipo:'DNI',poliza:'WC-2025-011',subido:'20/08/2023',estado:'Verificado'},
+      {cliente:'Jordi Camps',tipo:'DNI',poliza:'WC-2025-014',subido:'29/05/2025',estado:'Pendiente'},
+      {cliente:'Pol Vidal',tipo:'Certificado médico',poliza:'PR-88231',subido:'Hoy',estado:'Pendiente'},
+      {cliente:'Laia Ferrer',tipo:'Escritura vivienda',poliza:'WC-2025-011',subido:'21/08/2023',estado:'Verificado'}
+    ]
+  },
+  mensajes:{
+    title:'Mensajes', addLabel:'Nueva conversación',
+    stats:[['3','abiertos'],['1','en proceso'],['2','resueltos']],
+    columns:[{key:'de',label:'De'},{key:'asunto',label:'Asunto'},{key:'canal',label:'Canal'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    rows:[
+      {de:'Ana García',asunto:'Duda sobre cobertura de hogar',canal:'Teddy → Escalado',estado:'Nuevo',fecha:'Hace 1h'},
+      {de:'Pol Vidal',asunto:'Quiero cambiar de plan',canal:'Chat web',estado:'Nuevo',fecha:'Hace 3h'},
+      {de:'Jordi Camps',asunto:'Cancelación de póliza',canal:'Email',estado:'En proceso',fecha:'Hace 1 día'},
+      {de:'Núria Soler',asunto:'Consulta factura',canal:'Chat web',estado:'Resuelto',fecha:'Hace 2 días'},
+      {de:'marina@mail.com',asunto:'Pregunta sobre WynPoints',canal:'Teddy → Escalado',estado:'Nuevo',fecha:'Hace 4h'},
+      {de:'Laia Ferrer',asunto:'Renovación anticipada',canal:'Email',estado:'Resuelto',fecha:'Hace 4 días'}
+    ]
+  },
+  notificaciones:{
+    title:'Plantillas de notificación', addLabel:'Nueva plantilla',
+    stats:[['4','activas'],['1','desactivada']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'canal',label:'Canal'},{key:'disparador',label:'Disparador'},{key:'activa',label:'Activa',badge:true}],
+    rows:[
+      {nombre:'Bienvenida nuevo cliente',canal:'Email',disparador:'Alta de cuenta',activa:'Sí'},
+      {nombre:'Póliza activada',canal:'Email + Push',disparador:'Activación de póliza',activa:'Sí'},
+      {nombre:'Recordatorio renovación',canal:'Email',disparador:'15 días antes de vencer',activa:'Sí'},
+      {nombre:'Nivel WynPoints alcanzado',canal:'Push',disparador:'Cambio de nivel',activa:'Sí'},
+      {nombre:'Presupuesto sin contactar 48h',canal:'Interno (Slack)',disparador:'Presupuesto nuevo',activa:'No'}
+    ]
+  },
+  automatizaciones:{
+    title:'Automatizaciones (n8n)', addLabel:'Nuevo flujo',
+    stats:[['5','activos'],['1','pausado']],
+    columns:[{key:'nombre',label:'Nombre'},{key:'disparador',label:'Disparador'},{key:'ultima',label:'Última ejecución'},{key:'estado',label:'Estado',badge:true}],
+    rows:[
+      {nombre:'Alta de póliza → Asignar WynPoints',disparador:'Webhook Supabase',ultima:'Hace 12 min',estado:'Activo'},
+      {nombre:'Recordatorio de renovación',disparador:'Cron diario 08:00',ultima:'Hoy 08:00',estado:'Activo'},
+      {nombre:'Escalado Teddy → Soporte',disparador:'Webhook chat',ultima:'Hace 3h',estado:'Activo'},
+      {nombre:'Sincronización aseguradoras',disparador:'Cron cada 6h',ultima:'Hace 2h',estado:'Activo'},
+      {nombre:'Backup de documentos',disparador:'Cron diario 03:00',ultima:'Hoy 03:00',estado:'Activo'},
+      {nombre:'Informe semanal a founders',disparador:'Cron lunes 09:00',ultima:'Hace 4 días',estado:'Pausado'}
+    ]
+  },
+  logs:{
+    title:'Logs del sistema', addLabel:'Exportar',
+    stats:[['6','últimos eventos']],
+    columns:[{key:'ts',label:'Fecha / hora'},{key:'actor',label:'Actor'},{key:'accion',label:'Acción'},{key:'detalle',label:'Detalle',mono:true}],
+    rows:[
+      {ts:'Hoy 11:42',actor:'Gabriel Calvo',accion:'Inicio de sesión',detalle:'IP 84.120.x.x'},
+      {ts:'Hoy 11:15',actor:'Sistema',accion:'Póliza activada',detalle:'WC-2025-011'},
+      {ts:'Hoy 09:03',actor:'Laura Martín',accion:'Editó beneficio',detalle:'Mes de gimnasio'},
+      {ts:'Ayer 22:10',actor:'Automatización',accion:'Backup de documentos',detalle:'OK'},
+      {ts:'Ayer 18:44',actor:'Marc Puig',accion:'Respondió mensaje',detalle:'Jordi Camps'},
+      {ts:'Ayer 08:00',actor:'Automatización',accion:'Recordatorio renovación',detalle:'14 enviados'}
+    ]
+  }
+};
+
+Object.keys(D).forEach(function(key){
+  var mountId = 'mount-' + key;
+  if (document.getElementById(mountId)) mountTable(mountId, D[key]);
+});
+
+/* ---------- CHARTS ---------- */
+function renderBarChart(elId, data){
+  var el = document.getElementById(elId);
+  var max = Math.max.apply(null, data.map(function(d){ return d.v; }));
+  el.innerHTML = data.map(function(d){
+    var pct = Math.max(6, Math.round((d.v/max)*100));
+    return '<div class="bar"><div class="val">'+d.v+'</div><div class="fill" style="height:0" data-target="'+pct+'%"></div><div class="lbl">'+d.l+'</div></div>';
+  }).join('');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    el.querySelectorAll('.fill').forEach(function(f){ f.style.height = f.getAttribute('data-target'); });
+  }); });
+}
+renderBarChart('chartPolizas', [{l:'Feb',v:58},{l:'Mar',v:64},{l:'Abr',v:71},{l:'May',v:80},{l:'Jun',v:76},{l:'Jul',v:92}]);
+renderBarChart('chartClientes', [{l:'S1',v:22},{l:'S2',v:19},{l:'S3',v:27},{l:'S4',v:31},{l:'S5',v:24},{l:'S6',v:35}]);
+
+function renderHBars(elId, data){
+  var el = document.getElementById(elId);
+  var max = Math.max.apply(null, data.map(function(d){ return d.v; }));
+  el.innerHTML = data.map(function(d){
+    var pct = Math.round((d.v/max)*100);
+    return '<div class="hbar-row"><span class="lbl">'+d.l+'</span><div class="track"><div class="fill" style="width:0" data-target="'+pct+'%"></div></div><span class="val">'+d.v+'%</span></div>';
+  }).join('');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    el.querySelectorAll('.fill').forEach(function(f){ f.style.width = f.getAttribute('data-target'); });
+  }); });
+}
+renderHBars('hbarTipos', [{l:'Coche',v:34},{l:'Hogar',v:26},{l:'Salud',v:21},{l:'Vida',v:12},{l:'Empresa',v:7}]);
+renderHBars('hbarCanjes', [{l:'Regalo',v:38},{l:'Movilidad',v:27},{l:'Bienestar',v:19},{l:'Ocio',v:11},{l:'Salud',v:5}]);
+renderHBars('hbarNiveles', [{l:'Bronce',v:46},{l:'Plata',v:31},{l:'Oro',v:23}]);
+
+/* ---------- ACTIVITY FEED ---------- */
+document.getElementById('activityFeed').innerHTML = D.logs.rows.slice(0,4).map(function(r){
+  return '<div class="activity-item"><span class="activity-dot"></span><div><div>'+esc(r.actor)+' — '+esc(r.accion)+' <span class="mono" style="color:var(--text-3)">'+esc(r.detalle)+'</span></div><div class="t">'+esc(r.ts)+'</div></div></div>';
+}).join('');
+
+/* ---------- GLOBAL SEARCH ---------- */
+var SEARCH_INDEX = [];
+var SECTION_LABELS = {usuarios:'Usuarios',clientes:'Clientes',polizas:'Pólizas',presupuestos:'Presupuestos',siniestros:'Siniestros',tarificacion:'Tarificación real',aseguradoras:'Aseguradoras',comisiones:'Comisiones',wynpoints:'WynPoints',niveles:'Niveles',beneficios:'Beneficios',tarjetas:'Tarjetas regalo',comercios:'Comercios',telemedicina:'Telemedicina',documentos:'Documentos',mensajes:'Mensajes',notificaciones:'Notificaciones',automatizaciones:'Automatizaciones',logs:'Logs'};
+var PARENT_TAB = {comisiones:'aseguradoras',niveles:'wynpoints',tarjetas:'beneficios'};
+Object.keys(D).forEach(function(key){
+  var cfg = D[key];
+  var primaryKey = cfg.columns[0].key;
+  var secondaryKey = cfg.columns[1] ? cfg.columns[1].key : null;
+  cfg.rows.forEach(function(r){
+    SEARCH_INDEX.push({ tab: PARENT_TAB[key] || key, sub:key, section: SECTION_LABELS[key], primary: String(r[primaryKey]), secondary: secondaryKey ? String(r[secondaryKey]) : '' });
+  });
+});
+
+// Reconstruye las entradas del buscador global para una sección concreta
+// (se usa tras refrescar Presupuestos/Pólizas con datos reales de Supabase,
+// que llegan después de que este índice ya se construyó una vez con filas vacías).
+function refreshSearchIndexSection(key){
+  var cfg = D[key];
+  var primaryKey = cfg.columns[0].key;
+  var secondaryKey = cfg.columns[1] ? cfg.columns[1].key : null;
+  SEARCH_INDEX = SEARCH_INDEX.filter(function(item){ return item.sub !== key; });
+  cfg.rows.forEach(function(r){
+    SEARCH_INDEX.push({ tab: PARENT_TAB[key] || key, sub:key, section: SECTION_LABELS[key], primary: String(r[primaryKey]), secondary: secondaryKey ? String(r[secondaryKey]) : '' });
+  });
+}
+
+/* ---------- DATOS REALES: Presupuestos y Pólizas ---------- */
+// "quotes"/"policies" no tienen una FK directa a "profiles" (las dos
+// referencian auth.users por separado), así que PostgREST no puede
+// embeber el perfil automáticamente: se piden por separado y se cruzan
+// aquí mismo por user_id.
+async function fetchProfilesByIds(userIds){
+  var map = {};
+  var ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (!sb || !ids.length) return map;
+  var res = await sb.from('profiles').select('id, full_name, email').in('id', ids);
+  if (res.error) throw res.error;
+  (res.data || []).forEach(function(p){ map[p.id] = p; });
+  return map;
+}
+
+async function refreshPresupuestos(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('quotes').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var quotes = res.data || [];
+    var profiles = await fetchProfilesByIds(quotes.map(function(q){ return q.user_id; }));
+    var rows = quotes.map(function(q){
+      var profile = profiles[q.user_id];
+      var fd = q.form_data || {};
+      return {
+        ref: friendlyRef('WC', q.id),
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        tipo: capitalize(q.type || '—'),
+        precio: (q.premium != null ? 'Desde ' + q.premium + '€' : '—'),
+        estado: QUOTE_STATUS_LABELS[q.status] || q.status || '—',
+        fecha: formatDateEs(q.created_at),
+        motivo: q.rejection_reason || '',
+        documento: q.document_url ? 'Presupuesto validado.pdf' : '',
+        _id: q.id,
+        _userId: q.user_id,
+        _type: q.type,
+        _premium: q.premium
+      };
+    });
+    var cfg = D.presupuestos;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var pendientes = rows.filter(function(r){ return r.estado !== 'Validado' && r.estado !== 'Rechazado'; }).length;
+    var validados = rows.filter(function(r){ return r.estado === 'Validado'; }).length;
+    var tasa = rows.length ? Math.round((validados / rows.length) * 100) + '%' : '—';
+    cfg.stats = [[String(rows.length), 'creados'], [String(pendientes), 'pendientes de validar'], [tasa, 'tasa de validación']];
+    mountTable('mount-presupuestos', cfg);
+    refreshSearchIndexSection('presupuestos');
+  } catch (err) {
+    showToast('No se pudieron cargar los presupuestos: ' + err.message);
+  }
+}
+
+async function refreshSiniestros(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('claims').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var claims = res.data || [];
+    var profiles = await fetchProfilesByIds(claims.map(function(c){ return c.user_id; }));
+    var rows = claims.map(function(c){
+      var profile = profiles[c.user_id];
+      return {
+        ref: c.reference || friendlyRef('SN', c.id),
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        tipo: c.incident_type || '—',
+        fecha: formatDateEs(c.incident_date || c.created_at),
+        estado: c.status || 'Enviado',
+        motivo: c.resolution_note || '',
+        _id: c.id
+      };
+    });
+    var cfg = D.siniestros;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var abiertos = rows.filter(function(r){ return r.estado === 'Enviado' || r.estado === 'En revisión'; }).length;
+    var resueltos = rows.filter(function(r){ return r.estado === 'Resuelto'; }).length;
+    cfg.stats = [[String(rows.length), 'totales'], [String(abiertos), 'abiertos'], [String(resueltos), 'resueltos']];
+    mountTable('mount-siniestros', cfg);
+    refreshSearchIndexSection('siniestros');
+  } catch (err) {
+    showToast('No se pudieron cargar los siniestros: ' + err.message);
+  }
+}
+
+// "rating_jobs" no tiene user_id directo (solo quote_id) — hay que cruzar
+// primero con "quotes" para saber de qué usuario es cada job, igual que ya
+// hace refreshPresupuestos/refreshPolizas con sus propias relaciones.
+async function refreshTarificacion(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('rating_jobs').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var jobs = res.data || [];
+    var quoteIds = Array.from(new Set(jobs.map(function(j){ return j.quote_id; }).filter(Boolean)));
+    var quotesMap = {};
+    if (quoteIds.length) {
+      var qRes = await sb.from('quotes').select('id, user_id, type').in('id', quoteIds);
+      if (qRes.error) throw qRes.error;
+      (qRes.data || []).forEach(function(q){ quotesMap[q.id] = q; });
+    }
+    var profiles = await fetchProfilesByIds(Object.values(quotesMap).map(function(q){ return q.user_id; }));
+    var rows = jobs.map(function(j){
+      var quote = quotesMap[j.quote_id];
+      var profile = quote ? profiles[quote.user_id] : null;
+      var detalle = j.error_message ? ('Error: ' + j.error_message) : (j.extracted_data ? JSON.stringify(j.extracted_data, null, 2) : '');
+      return {
+        ref: quote ? friendlyRef('WC', quote.id) : '—',
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        aseguradora: capitalize(j.insurer || '—'),
+        precio: (j.real_premium != null ? j.real_premium + '€/mes' : '—'),
+        estado: RATING_JOB_STATUS_LABELS[j.status] || j.status || '—',
+        fecha: formatDateEs(j.created_at),
+        detalle: detalle,
+        _id: j.id
+      };
+    });
+    var cfg = D.tarificacion;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var pendientes = rows.filter(function(r){ return r.estado === 'Pendiente' || r.estado === 'Procesando'; }).length;
+    var fallidos = rows.filter(function(r){ return r.estado === 'Fallido'; }).length;
+    cfg.stats = [[String(rows.length), 'totales'], [String(pendientes), 'pendientes'], [String(fallidos), 'fallidos']];
+    mountTable('mount-tarificacion', cfg);
+    refreshSearchIndexSection('tarificacion');
+  } catch (err) {
+    showToast('No se pudieron cargar los jobs de tarificación: ' + err.message);
+  }
+}
+
+async function refreshPolizas(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('policies').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var policies = res.data || [];
+    var profiles = await fetchProfilesByIds(policies.map(function(p){ return p.user_id; }));
+    var rows = policies.map(function(p){
+      var profile = profiles[p.user_id];
+      return {
+        ref: p.reference || friendlyRef('WC', p.id),
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        tipo: capitalize(p.type || '—'),
+        aseguradora: '—',
+        prima: (p.premium != null ? p.premium + '€/mes' : '—'),
+        estado: POLICY_STATUS_LABELS[p.status] || capitalize(p.status) || '—',
+        renovacion: '—',
+        _id: p.id,
+        _userId: p.user_id
+      };
+    });
+    var cfg = D.polizas;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var activas = rows.filter(function(r){ return r.estado === 'Activa'; }).length;
+    var pendientes = rows.filter(function(r){ return r.estado === 'Pendiente'; }).length;
+    cfg.stats = [[String(rows.length), 'pólizas'], [String(activas), 'activas'], [String(pendientes), 'pendientes']];
+    mountTable('mount-polizas', cfg);
+    refreshSearchIndexSection('polizas');
+  } catch (err) {
+    showToast('No se pudieron cargar las pólizas: ' + err.message);
+  }
+}
+
+// Agrega por mes en vez de por aseguradora porque las pólizas todavía no
+// tienen un asegurador real asignado (ver comentario en D.comisiones).
+async function refreshComisiones(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('policies').select('created_at, commission_amount').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var policies = (res.data || []).filter(function(p){ return p.commission_amount != null; });
+    var byMonth = {};
+    var order = [];
+    policies.forEach(function(p){
+      var key = monthKeyEs(p.created_at);
+      if (!byMonth[key]) { byMonth[key] = { nuevas: 0, comision: 0 }; order.push(key); }
+      byMonth[key].nuevas += 1;
+      byMonth[key].comision += p.commission_amount;
+    });
+    var rows = order.map(function(key){
+      return { mes: key, nuevas: String(byMonth[key].nuevas), comision: formatEuros(byMonth[key].comision) + '€', estado: 'Pendiente' };
+    });
+    var cfg = D.comisiones;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var now = new Date();
+    var esteMs = policies.filter(function(p){ return isSameMonth(p.created_at, now); }).reduce(function(s,p){ return s + p.commission_amount; }, 0);
+    var total = policies.reduce(function(s,p){ return s + p.commission_amount; }, 0);
+    cfg.stats = [[formatEuros(esteMs) + '€', 'comisión del mes'], [formatEuros(total) + '€', 'acumulada'], [String(policies.length), 'pólizas con comisión']];
+    mountTable('mount-comisiones', cfg);
+    refreshSearchIndexSection('comisiones');
+  } catch (err) {
+    showToast('No se pudieron cargar las comisiones: ' + err.message);
+  }
+}
+
+/* ---------- DATOS REALES: Usuarios, Clientes y WynPoints ---------- */
+async function fetchAllProfiles(){
+  if (!sb) return [];
+  var res = await sb.from('profiles').select('*');
+  if (res.error) throw res.error;
+  return res.data || [];
+}
+
+// "amount"/"description" son los nombres reales confirmados en app.js
+// (loadUserData). Se leen con fallback a "points"/"transaction_type" por si
+// el proyecto real usa los nombres que proponía la migración base.
+function txAmount(t){ return (t.amount != null ? t.amount : t.points) || 0; }
+function txMotivo(t){ return t.description || t.transaction_type || t.type || '—'; }
+
+async function refreshUsuarios(){
+  if (!sb) return;
+  try {
+    var profiles = await fetchAllProfiles();
+    var staff = profiles.filter(function(p){ return p.role === 'admin'; });
+    var rows = staff.map(function(p){
+      return {
+        nombre: p.full_name || (p.email || '').split('@')[0] || '—',
+        email: p.email || '—',
+        rol: 'Admin',
+        estado: '—',
+        acceso: '—'
+      };
+    });
+    var cfg = D.usuarios;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    cfg.stats = [[String(rows.length), 'cuentas de equipo (rol admin)']];
+    mountTable('mount-usuarios', cfg);
+    refreshSearchIndexSection('usuarios');
+  } catch (err) {
+    showToast('No se pudieron cargar los usuarios: ' + err.message);
+  }
+}
+
+async function refreshClientes(){
+  if (!sb) return;
+  try {
+    var profiles = await fetchAllProfiles();
+    var clients = profiles.filter(function(p){ return p.role !== 'admin'; });
+    var policiesRes = await sb.from('policies').select('user_id');
+    if (policiesRes.error) throw policiesRes.error;
+    var txRes = await sb.from('wynpoints_transactions').select('*');
+    if (txRes.error) throw txRes.error;
+
+    var policyCountByUser = {};
+    (policiesRes.data || []).forEach(function(p){ policyCountByUser[p.user_id] = (policyCountByUser[p.user_id] || 0) + 1; });
+    var ptsByUser = {};
+    (txRes.data || []).forEach(function(t){ ptsByUser[t.user_id] = (ptsByUser[t.user_id] || 0) + txAmount(t); });
+
+    var now = new Date();
+    var rows = clients.map(function(p){
+      var pts = ptsByUser[p.id] || 0;
+      return {
+        nombre: p.full_name || (p.email || '').split('@')[0] || '—',
+        email: p.email || '—',
+        nivel: getTier(pts),
+        seguros: String(policyCountByUser[p.id] || 0),
+        pts: formatEsNumber(pts),
+        alta: formatDateEs(p.created_at),
+        _newThisMonth: isSameMonth(p.created_at, now),
+        _hasPolicy: !!policyCountByUser[p.id]
+      };
+    });
+    var cfg = D.clientes;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var conPoliza = rows.filter(function(r){ return r._hasPolicy; }).length;
+    var pct = rows.length ? Math.round((conPoliza / rows.length) * 100) + '%' : '—';
+    var nuevos = rows.filter(function(r){ return r._newThisMonth; }).length;
+    cfg.stats = [[String(rows.length), 'clientes totales'], [pct, 'con póliza activa'], ['+' + nuevos, 'este mes']];
+    mountTable('mount-clientes', cfg);
+    refreshSearchIndexSection('clientes');
+  } catch (err) {
+    showToast('No se pudieron cargar los clientes: ' + err.message);
+  }
+}
+
+async function refreshWynpoints(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('wynpoints_transactions').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var txs = res.data || [];
+    var profiles = await fetchProfilesByIds(txs.map(function(t){ return t.user_id; }));
+    var rows = txs.map(function(t){
+      var profile = profiles[t.user_id];
+      var amount = txAmount(t);
+      return {
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        motivo: txMotivo(t),
+        pts: (amount >= 0 ? '+' : '') + formatEsNumber(amount),
+        fecha: formatDateEs(t.created_at)
+      };
+    });
+    var cfg = D.wynpoints;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var now = new Date();
+    var enCirculacion = txs.reduce(function(sum, t){ return sum + txAmount(t); }, 0);
+    var emitidosMes = txs.filter(function(t){ return isSameMonth(t.created_at, now) && txAmount(t) > 0; }).reduce(function(sum, t){ return sum + txAmount(t); }, 0);
+    var canjeadosMes = txs.filter(function(t){ return isSameMonth(t.created_at, now) && txAmount(t) < 0; }).reduce(function(sum, t){ return sum + txAmount(t); }, 0);
+    cfg.stats = [[formatEsNumber(enCirculacion), 'pts en circulación'], ['+' + formatEsNumber(emitidosMes), 'emitidos este mes'], [formatEsNumber(canjeadosMes), 'canjeados este mes']];
+    mountTable('mount-wynpoints', cfg);
+    refreshSearchIndexSection('wynpoints');
+  } catch (err) {
+    showToast('No se pudieron cargar los movimientos de WynPoints: ' + err.message);
+  }
+}
+
+var gsInput = document.getElementById('globalSearch');
+var gsResults = document.getElementById('gsearchResults');
+gsInput.addEventListener('input', function(){
+  var q = gsInput.value.trim().toLowerCase();
+  if (!q){ gsResults.classList.remove('is-open'); gsResults.innerHTML=''; return; }
+  var matches = SEARCH_INDEX.filter(function(item){
+    return item.primary.toLowerCase().indexOf(q) > -1 || item.secondary.toLowerCase().indexOf(q) > -1;
+  }).slice(0,6);
+  gsResults.innerHTML = matches.length ? matches.map(function(m){
+    return '<button data-tab="'+m.tab+'" data-sub="'+m.sub+'"><span class="r-main">'+esc(m.primary)+'</span><span class="r-meta">'+esc(m.section)+(m.secondary?(' · '+esc(m.secondary)):'')+'</span></button>';
+  }).join('') : '<div class="gsearch-empty">Sin resultados</div>';
+  gsResults.classList.add('is-open');
+});
+gsResults.addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  switchTab(btn.dataset.tab);
+  var sub = btn.dataset.sub;
+  var subBtn = document.querySelector('.subtab[data-sub="'+sub+'"]');
+  if (subBtn) subBtn.click();
+  gsResults.classList.remove('is-open');
+  gsInput.value = '';
+});
+document.addEventListener('click', function(e){
+  if (!e.target.closest('.gsearch')) gsResults.classList.remove('is-open');
+});
+
+/* ---------- CONFIG ACTIONS ---------- */
+document.getElementById('saveGeneralBtn').addEventListener('click', function(){ showToast('Guardado localmente. La persistencia real llegará con Supabase.'); });
+document.querySelectorAll('[data-integ]').forEach(function(btn){
+  btn.addEventListener('click', function(){ showToast(btn.dataset.integ + ': pendiente de conectar por OpenClaw.'); });
+});
+
+/* ---------- SIDEBAR TOGGLE (mobile) ---------- */
+var sbToggle = document.getElementById("sbToggle");
+var sbOverlay = document.getElementById("sbOverlay");
+var sidebar = document.querySelector(".sidebar");
+if (sbToggle && sbOverlay && sidebar){
+  function openSidebar(){ sidebar.classList.add("is-open"); sbOverlay.classList.add("is-open"); }
+  function closeSidebar(){ sidebar.classList.remove("is-open"); sbOverlay.classList.remove("is-open"); }
+  sbToggle.addEventListener("click", function(e){ e.stopPropagation(); if(sidebar.classList.contains("is-open")) closeSidebar(); else openSidebar(); });
+  sbOverlay.addEventListener("click", closeSidebar);
+  document.querySelectorAll(".sb-item[data-tab]").forEach(function(item){
+    item.addEventListener("click", function(){ if(window.innerWidth < 981) closeSidebar(); });
+  });
+}
+// Also close sidebar on Escape key
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && sidebar && sidebar.classList.contains("is-open")) closeSidebar();
+});
+
+/* ---------- KEYBOARD: "/" enfoca la búsqueda global ---------- */
+document.addEventListener('keydown', function(e){
+  if (e.key !== '/' || e.target.closest('input,textarea,select')) return;
+  if (!document.getElementById('app').classList.contains('is-active')) return;
+  e.preventDefault();
+  gsInput.focus();
+});
+
+/* ---------- CURSOR SPOTLIGHT (kpi/panel/integ/settings cards) ---------- */
+document.querySelectorAll('.kpi-card,.panel,.integ-card,.settings-card').forEach(function(el){
+  el.addEventListener('mousemove', function(e){
+    var r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  });
+});
+
+})();
+</script>
+</body>
+</html>
