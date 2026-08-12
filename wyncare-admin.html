@@ -368,6 +368,7 @@ table.data tbody tr:hover{background:var(--surface-2)}
       <button class="sb-item" data-tab="polizas"><svg class="icon"><use href="#i-shield"/></svg>Pólizas</button>
       <button class="sb-item" data-tab="presupuestos"><svg class="icon"><use href="#i-file"/></svg>Presupuestos</button>
       <button class="sb-item" data-tab="siniestros"><svg class="icon"><use href="#i-alert"/></svg>Siniestros</button>
+      <button class="sb-item" data-tab="tarificacion"><svg class="icon"><use href="#i-link"/></svg>Tarificación real</button>
       <button class="sb-item" data-tab="aseguradoras"><svg class="icon"><use href="#i-store"/></svg>Aseguradoras</button>
 
       <div class="sb-group-label">Fidelización</div>
@@ -492,6 +493,7 @@ table.data tbody tr:hover{background:var(--surface-2)}
       <div class="admin-tab" id="tab-polizas"><div id="mount-polizas"></div></div>
       <div class="admin-tab" id="tab-presupuestos"><div id="mount-presupuestos"></div></div>
       <div class="admin-tab" id="tab-siniestros"><div id="mount-siniestros"></div></div>
+      <div class="admin-tab" id="tab-tarificacion"><div id="mount-tarificacion"></div></div>
 
       <div class="admin-tab" id="tab-aseguradoras">
         <div class="subtabs">
@@ -642,6 +644,10 @@ Object.keys(QUOTE_STATUS_LABELS).forEach(function(k){ QUOTE_STATUS_BY_LABEL[QUOT
 
 var POLICY_STATUS_LABELS = { active: 'Activa', pending: 'Pendiente', cancelled: 'Cancelada', expired: 'Expirada' };
 
+var RATING_JOB_STATUS_LABELS = { pending: 'Pendiente', processing: 'Procesando', done: 'Completado', failed: 'Fallido' };
+var RATING_JOB_STATUS_BY_LABEL = {};
+Object.keys(RATING_JOB_STATUS_LABELS).forEach(function(k){ RATING_JOB_STATUS_BY_LABEL[RATING_JOB_STATUS_LABELS[k]] = k; });
+
 // Tasa de comisión provisional por tipo de seguro — configurada a mano
 // (misma cifra que ya se mostraba en el mock de "Aseguradoras" para el ramo
 // correspondiente), no automatizada todavía con ninguna aseguradora real.
@@ -768,6 +774,7 @@ async function checkAdminAndEnter(user){
     refreshPresupuestos();
     refreshPolizas();
     refreshSiniestros();
+    refreshTarificacion();
     refreshComisiones();
     refreshUsuarios();
     refreshClientes();
@@ -964,10 +971,17 @@ function openManageModal(cfg, idx, onSaved){
     (row.documento ? '<p style="font-size:.78rem;color:var(--text-3);margin-top:.4rem">Archivo actual: '+esc(row.documento)+'</p>' : '') +
     '</div>'
   ) : '';
+  // Bloque de solo lectura (p.ej. datos extraídos del PDF / motivo de un
+  // fallo en la tarificación) — no todos los manageAction lo necesitan.
+  var detailHtml = (ma.detailLabel && row.detalle) ? (
+    '<div class="field"><label>'+esc(ma.detailLabel)+'</label>' +
+    '<pre style="white-space:pre-wrap;word-break:break-word;font-size:.78rem;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.7rem;margin-top:.3rem;max-height:180px;overflow:auto">'+esc(row.detalle)+'</pre>' +
+    '</div>'
+  ) : '';
 
   openModal(
     '<h3>'+esc(ma.label)+'</h3><p style="font-size:.8rem;color:var(--text-3);margin-top:.2rem">'+esc(row.ref || row.cliente || '')+'</p>' +
-    statusHtml + reasonHtml + fileHtml +
+    statusHtml + reasonHtml + detailHtml + fileHtml +
     '<div class="modal-actions"><button class="btn btn-ghost" id="modalCancel" type="button">Cancelar</button><button class="btn btn-primary" id="modalSave" type="button">Guardar</button></div>'
   );
 
@@ -1096,6 +1110,22 @@ var D = {
         var updates = { status: changes.estado };
         updates.resolution_note = changes.estado === 'Rechazado' ? (changes.motivo || null) : null;
         var { error } = await sb.from('claims').update(updates).eq('id', row._id);
+        if (error) throw error;
+      }
+    },
+    rows:[]
+  },
+  tarificacion:{
+    title:'Tarificación real', addLabel:'Nuevo job',
+    stats:[['—','totales'],['—','pendientes'],['—','fallidos']],
+    columns:[{key:'ref',label:'Presupuesto',mono:true},{key:'cliente',label:'Cliente'},{key:'aseguradora',label:'Aseguradora'},{key:'precio',label:'Precio real',align:'right'},{key:'estado',label:'Estado',badge:true},{key:'fecha',label:'Fecha',align:'right'}],
+    manageAction:{
+      label:'Ver / reintentar', detailLabel:'Datos extraídos / error',
+      statusOptions:['Pendiente','Procesando','Completado','Fallido'],
+      persist: async function(row, changes){
+        if (!sb) return;
+        var updates = { status: RATING_JOB_STATUS_BY_LABEL[changes.estado] || changes.estado, updated_at: new Date().toISOString() };
+        var { error } = await sb.from('rating_jobs').update(updates).eq('id', row._id);
         if (error) throw error;
       }
     },
@@ -1296,7 +1326,7 @@ document.getElementById('activityFeed').innerHTML = D.logs.rows.slice(0,4).map(f
 
 /* ---------- GLOBAL SEARCH ---------- */
 var SEARCH_INDEX = [];
-var SECTION_LABELS = {usuarios:'Usuarios',clientes:'Clientes',polizas:'Pólizas',presupuestos:'Presupuestos',siniestros:'Siniestros',aseguradoras:'Aseguradoras',comisiones:'Comisiones',wynpoints:'WynPoints',niveles:'Niveles',beneficios:'Beneficios',tarjetas:'Tarjetas regalo',comercios:'Comercios',telemedicina:'Telemedicina',documentos:'Documentos',mensajes:'Mensajes',notificaciones:'Notificaciones',automatizaciones:'Automatizaciones',logs:'Logs'};
+var SECTION_LABELS = {usuarios:'Usuarios',clientes:'Clientes',polizas:'Pólizas',presupuestos:'Presupuestos',siniestros:'Siniestros',tarificacion:'Tarificación real',aseguradoras:'Aseguradoras',comisiones:'Comisiones',wynpoints:'WynPoints',niveles:'Niveles',beneficios:'Beneficios',tarjetas:'Tarjetas regalo',comercios:'Comercios',telemedicina:'Telemedicina',documentos:'Documentos',mensajes:'Mensajes',notificaciones:'Notificaciones',automatizaciones:'Automatizaciones',logs:'Logs'};
 var PARENT_TAB = {comisiones:'aseguradoras',niveles:'wynpoints',tarjetas:'beneficios'};
 Object.keys(D).forEach(function(key){
   var cfg = D[key];
@@ -1403,6 +1433,51 @@ async function refreshSiniestros(){
     refreshSearchIndexSection('siniestros');
   } catch (err) {
     showToast('No se pudieron cargar los siniestros: ' + err.message);
+  }
+}
+
+// "rating_jobs" no tiene user_id directo (solo quote_id) — hay que cruzar
+// primero con "quotes" para saber de qué usuario es cada job, igual que ya
+// hace refreshPresupuestos/refreshPolizas con sus propias relaciones.
+async function refreshTarificacion(){
+  if (!sb) return;
+  try {
+    var res = await sb.from('rating_jobs').select('*').order('created_at', { ascending: false });
+    if (res.error) throw res.error;
+    var jobs = res.data || [];
+    var quoteIds = Array.from(new Set(jobs.map(function(j){ return j.quote_id; }).filter(Boolean)));
+    var quotesMap = {};
+    if (quoteIds.length) {
+      var qRes = await sb.from('quotes').select('id, user_id, type').in('id', quoteIds);
+      if (qRes.error) throw qRes.error;
+      (qRes.data || []).forEach(function(q){ quotesMap[q.id] = q; });
+    }
+    var profiles = await fetchProfilesByIds(Object.values(quotesMap).map(function(q){ return q.user_id; }));
+    var rows = jobs.map(function(j){
+      var quote = quotesMap[j.quote_id];
+      var profile = quote ? profiles[quote.user_id] : null;
+      var detalle = j.error_message ? ('Error: ' + j.error_message) : (j.extracted_data ? JSON.stringify(j.extracted_data, null, 2) : '');
+      return {
+        ref: quote ? friendlyRef('WC', quote.id) : '—',
+        cliente: (profile && (profile.full_name || profile.email)) || '—',
+        aseguradora: capitalize(j.insurer || '—'),
+        precio: (j.real_premium != null ? j.real_premium + '€/mes' : '—'),
+        estado: RATING_JOB_STATUS_LABELS[j.status] || j.status || '—',
+        fecha: formatDateEs(j.created_at),
+        detalle: detalle,
+        _id: j.id
+      };
+    });
+    var cfg = D.tarificacion;
+    cfg.rows.length = 0;
+    Array.prototype.push.apply(cfg.rows, rows);
+    var pendientes = rows.filter(function(r){ return r.estado === 'Pendiente' || r.estado === 'Procesando'; }).length;
+    var fallidos = rows.filter(function(r){ return r.estado === 'Fallido'; }).length;
+    cfg.stats = [[String(rows.length), 'totales'], [String(pendientes), 'pendientes'], [String(fallidos), 'fallidos']];
+    mountTable('mount-tarificacion', cfg);
+    refreshSearchIndexSection('tarificacion');
+  } catch (err) {
+    showToast('No se pudieron cargar los jobs de tarificación: ' + err.message);
   }
 }
 
